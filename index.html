@@ -2,1498 +2,1546 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>NexusOS — Web Desktop</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Windows Command Prompt — NexusOS Edition</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;user-select:none}
-
-:root{
-  --accent:#7c6cff;
-  --accent-glow:rgba(124,108,255,.4);
-  --panel-bg:rgba(20,20,26,.72);
-  --panel-border:rgba(255,255,255,.08);
-  --text:#f2f2f7;
-  --muted:#8e8e93;
-  --taskbar-h:64px;
-  --radius:14px;
-  --shadow:0 20px 60px -20px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#0c0c0c}
+body{
+  display:flex;align-items:center;justify-content:center;
+  font-family:Consolas,'Lucida Console','Courier New',monospace;
+  padding:20px;
 }
-body.light{
-  --panel-bg:rgba(255,255,255,.72);
-  --panel-border:rgba(0,0,0,.08);
-  --text:#1c1c1e;
-  --muted:#6c6c70;
-  --shadow:0 20px 60px -20px rgba(0,0,0,.25),0 0 0 1px rgba(0,0,0,.05);
-}
-
-/* ===== DESKTOP ===== */
-#desktop{
-  position:fixed;inset:0;
-  background-size:cover;background-position:center;
-  transition:background .6s ease;
+#cmdWin{
+  width:min(920px,100%);
+  height:min(600px,100%);
+  background:#0c0c0c;
+  border:1px solid #2a2a2a;
+  border-radius:8px;
+  display:flex;flex-direction:column;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.05);
   overflow:hidden;
 }
-#desktop::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.08),transparent 60%);
-  pointer-events:none;
-}
-
-/* ===== DESKTOP ICONS ===== */
-#desktopIcons{
-  position:absolute;top:24px;left:24px;
-  display:flex;flex-direction:column;gap:14px;
-  z-index:5;
-}
-.d-icon{
-  width:88px;
-  display:flex;flex-direction:column;align-items:center;gap:6px;
-  padding:10px 6px;border-radius:12px;cursor:pointer;
-  transition:background .2s;
-  color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);
-}
-.d-icon:hover{background:rgba(255,255,255,.12)}
-.d-icon:active{background:rgba(255,255,255,.2);transform:scale(.96)}
-.d-icon .ic{
-  width:52px;height:52px;border-radius:14px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:26px;
-  box-shadow:0 6px 16px -4px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.2);
-}
-.d-icon .lbl{font-size:11.5px;font-weight:500;text-align:center;line-height:1.25}
-
-/* ===== WINDOWS ===== */
-#windowsLayer{position:absolute;inset:0;z-index:10;pointer-events:none}
-.win{
-  position:absolute;pointer-events:auto;
-  background:var(--panel-bg);
-  backdrop-filter:blur(28px) saturate(180%);
-  -webkit-backdrop-filter:blur(28px) saturate(180%);
-  border:1px solid var(--panel-border);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  display:flex;flex-direction:column;overflow:hidden;
-  min-width:280px;min-height:180px;
-  color:var(--text);
-  animation:winIn .28s cubic-bezier(.2,.9,.3,1.15);
-  transition:opacity .18s,transform .18s;
-}
-.win.minimized{opacity:0;pointer-events:none;transform:scale(.85) translateY(40px)}
-@keyframes winIn{
-  from{opacity:0;transform:scale(.92) translateY(14px)}
-  to{opacity:1;transform:scale(1) translateY(0)}
-}
-.win.maximized{border-radius:0}
-.win.focused{border-color:var(--accent)}
-.win.focused .titlebar{background:linear-gradient(180deg,rgba(255,255,255,.06),transparent)}
-
-.titlebar{
-  height:38px;flex-shrink:0;
+#titlebar{
+  height:32px;flex-shrink:0;
+  background:#1f1f1f;
   display:flex;align-items:center;
-  padding:0 12px;gap:10px;
-  cursor:grab;touch-action:none;
-  border-bottom:1px solid var(--panel-border);
+  padding:0 12px;gap:8px;
+  border-bottom:1px solid #000;
+  user-select:none;
 }
-.titlebar:active{cursor:grabbing}
-.win-controls{display:flex;gap:8px;flex-shrink:0}
-.wc{
-  width:13px;height:13px;border-radius:50%;border:none;cursor:pointer;
-  transition:transform .15s,filter .15s;
-  position:relative;
-}
-.wc:hover{filter:brightness(1.2);transform:scale(1.1)}
-.wc.close{background:#ff5f57}
-.wc.min{background:#febc2e}
-.wc.max{background:#28c840}
-.titlebar .ttl{
-  flex:1;font-size:12.5px;font-weight:600;
-  text-align:center;padding-right:44px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  color:var(--text);opacity:.9;
-}
-
-.win-body{
-  flex:1;overflow:auto;
-  padding:16px;
-  font-size:13px;line-height:1.55;
-}
-.win-body::-webkit-scrollbar{width:8px;height:8px}
-.win-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px}
-.win-body::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
-
-.resize-handle{
-  position:absolute;width:18px;height:18px;right:0;bottom:0;
-  cursor:nwse-resize;touch-action:none;
-  z-index:5;
-}
-.resize-handle::after{
-  content:'';position:absolute;right:4px;bottom:4px;
-  width:8px;height:8px;border-right:2px solid var(--muted);
-  border-bottom:2px solid var(--muted);opacity:.5;
-}
-
-/* ===== TASKBAR ===== */
-#taskbar{
-  position:fixed;left:50%;bottom:14px;transform:translateX(-50%);
-  height:var(--taskbar-h);
-  display:flex;align-items:center;gap:8px;
-  padding:8px 10px;
-  background:var(--panel-bg);
-  backdrop-filter:blur(30px) saturate(180%);
-  -webkit-backdrop-filter:blur(30px) saturate(180%);
-  border:1px solid var(--panel-border);
-  border-radius:20px;
-  box-shadow:0 20px 50px -15px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);
-  z-index:1000;
-  max-width:calc(100vw - 24px);
-}
-.tb-btn{
-  height:48px;min-width:48px;
-  border:none;background:transparent;
-  border-radius:12px;cursor:pointer;
+.tb-icon{
+  width:16px;height:16px;
+  background:linear-gradient(135deg,#0078d4,#005a9e);
+  border-radius:2px;
   display:flex;align-items:center;justify-content:center;
-  font-size:22px;
-  transition:background .18s,transform .12s;
-  position:relative;
-  color:var(--text);
+  font-size:10px;color:#fff;font-weight:700;
 }
-.tb-btn:hover{background:rgba(255,255,255,.1)}
-.tb-btn:active{transform:scale(.9)}
-.tb-btn.launcher{background:linear-gradient(135deg,var(--accent),#a89bff);color:#fff}
-.tb-btn.running::after{
-  content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
-  width:4px;height:4px;border-radius:50%;background:var(--accent);
+.tb-title{
+  flex:1;font-size:11.5px;color:#ddd;
+  font-family:'Segoe UI',sans-serif;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.tb-btn.active::after{width:16px;border-radius:2px}
+.tb-ctrl{display:flex;gap:0}
+.tb-btn{
+  width:44px;height:32px;
+  background:transparent;border:none;
+  color:#ddd;font-size:10px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .12s;
+}
+.tb-btn:hover{background:#333}
+.tb-btn.close:hover{background:#e81123;color:#fff}
 
-.tb-divider{width:1px;height:28px;background:var(--panel-border);margin:0 4px}
-
-#taskItems{display:flex;gap:6px;align-items:center}
-.task-item{
-  height:48px;padding:0 14px;
-  border:none;background:rgba(255,255,255,.05);
-  border-radius:12px;cursor:pointer;
-  display:flex;align-items:center;gap:8px;
-  color:var(--text);font-size:12.5px;font-weight:500;
-  transition:background .18s,transform .12s;
-  max-width:160px;
-  font-family:inherit;
+#screen{
+  flex:1;
+  padding:8px 12px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  font-size:14px;
+  line-height:1.35;
+  color:#cccccc;
+  background:#0c0c0c;
+  scrollbar-width:thin;
+  scrollbar-color:#333 #0c0c0c;
+  white-space:pre-wrap;
+  word-break:break-word;
+  cursor:text;
 }
-.task-item:hover{background:rgba(255,255,255,.1)}
-.task-item.focused{background:rgba(124,108,255,.2);box-shadow:inset 0 0 0 1px rgba(124,108,255,.4)}
-.task-item .ti-icon{font-size:16px;flex-shrink:0}
-.task-item .ti-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#screen::-webkit-scrollbar{width:10px}
+#screen::-webkit-scrollbar-track{background:#0c0c0c}
+#screen::-webkit-scrollbar-thumb{background:#333;border-radius:2px;border:2px solid #0c0c0c}
+#screen::-webkit-scrollbar-thumb:hover{background:#444}
 
-#tray{display:flex;align-items:center;gap:4px}
-.tray-btn{
-  height:44px;min-width:44px;padding:0 12px;
-  border:none;background:transparent;border-radius:10px;
-  cursor:pointer;display:flex;align-items:center;gap:6px;
-  color:var(--text);font-size:11.5px;font-weight:600;
-  transition:background .18s;
-  font-family:inherit;
+.line{white-space:pre-wrap;word-break:break-word;min-height:18px}
+.err{color:#ff5c5c}
+.ok{color:#5cff7a}
+.warn{color:#ffd75c}
+.info{color:#5ccfff}
+.dim{color:#888}
+.hdr{color:#fff}
+#inputLine{display:flex;flex-wrap:wrap;align-items:baseline}
+#promptTxt{white-space:pre}
+#cmdInput{
+  flex:1;min-width:100px;
+  background:transparent;border:none;
+  outline:none;color:inherit;
+  font:inherit;padding:0;margin:0;
+  caret-color:#ccc;
 }
-.tray-btn:hover{background:rgba(255,255,255,.1)}
-#clock{font-variant-numeric:tabular-nums;letter-spacing:.02em}
-#clock .date{display:block;font-size:9.5px;font-weight:500;opacity:.7;line-height:1}
+::selection{background:#264f78;color:#fff}
 
 @media(max-width:640px){
-  .task-item .ti-name{display:none}
-  .task-item{padding:0 12px}
-  #tray .hide-mobile{display:none}
-  #taskbar{padding:6px;gap:4px;bottom:10px}
-  .tb-btn{height:44px;min-width:44px}
+  body{padding:0}
+  #cmdWin{border-radius:0;border:none;width:100vw;height:100vh;max-width:100%;max-height:100%}
+  #screen{font-size:12.5px;padding:6px 8px}
 }
-
-/* ===== LAUNCHER ===== */
-#launcher{
-  position:fixed;inset:0;z-index:2000;
-  background:rgba(10,10,14,.55);
-  backdrop-filter:blur(30px) saturate(180%);
-  -webkit-backdrop-filter:blur(30px) saturate(180%);
-  display:flex;flex-direction:column;align-items:center;
-  padding:60px 24px 100px;
-  opacity:0;pointer-events:none;
-  transition:opacity .28s ease;
-  overflow-y:auto;
-}
-#launcher.show{opacity:1;pointer-events:auto}
-#launcherSearch{
-  width:min(520px,100%);
-  padding:14px 20px;
-  background:rgba(255,255,255,.1);
-  border:1px solid rgba(255,255,255,.14);
-  border-radius:14px;
-  color:#fff;font-size:15px;font-family:inherit;
-  outline:none;margin-bottom:40px;
-  transition:border-color .2s,background .2s;
-}
-#launcherSearch:focus{border-color:var(--accent);background:rgba(255,255,255,.14)}
-#launcherSearch::placeholder{color:rgba(255,255,255,.5)}
-#appGrid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(110px,1fr));
-  gap:20px;
-  width:min(720px,100%);
-}
-.app-tile{
-  display:flex;flex-direction:column;align-items:center;gap:10px;
-  padding:18px 8px;border-radius:16px;cursor:pointer;
-  transition:background .2s,transform .15s;
-  color:#fff;border:none;background:transparent;
-  font-family:inherit;
-}
-.app-tile:hover{background:rgba(255,255,255,.1)}
-.app-tile:active{transform:scale(.94)}
-.app-tile .ic{
-  width:64px;height:64px;border-radius:16px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:30px;
-  box-shadow:0 10px 24px -6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.25);
-}
-.app-tile .nm{font-size:12.5px;font-weight:500;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.5)}
-
-/* ===== QUICK SETTINGS ===== */
-#quickSettings{
-  position:fixed;bottom:90px;right:20px;z-index:1500;
-  width:min(320px,calc(100vw - 40px));
-  background:var(--panel-bg);
-  backdrop-filter:blur(30px) saturate(180%);
-  -webkit-backdrop-filter:blur(30px) saturate(180%);
-  border:1px solid var(--panel-border);
-  border-radius:18px;padding:16px;
-  box-shadow:0 30px 60px -20px rgba(0,0,0,.7);
-  color:var(--text);
-  transform-origin:bottom right;
-  transform:scale(.9) translateY(10px);
-  opacity:0;pointer-events:none;
-  transition:transform .22s cubic-bezier(.2,.9,.3,1.15),opacity .2s;
-}
-#quickSettings.show{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
-.qs-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
-.qs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
-.qs-tile{
-  padding:12px;border-radius:12px;
-  background:rgba(255,255,255,.06);
-  border:1px solid var(--panel-border);
-  cursor:pointer;transition:background .18s;
-  display:flex;align-items:center;gap:10px;
-  color:var(--text);font-size:12px;font-weight:500;
-  font-family:inherit;
-}
-.qs-tile:hover{background:rgba(255,255,255,.12)}
-.qs-tile.on{background:var(--accent);border-color:var(--accent);color:#fff}
-.qs-tile .ic{font-size:16px}
-
-.slider{
-  -webkit-appearance:none;width:100%;height:4px;
-  background:rgba(255,255,255,.15);border-radius:2px;outline:none;
-}
-.slider::-webkit-slider-thumb{
-  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
-  background:var(--accent);cursor:pointer;
-  box-shadow:0 0 0 4px var(--accent-glow);
-}
-.slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
-
-.color-dots{display:flex;gap:8px;margin-top:8px}
-.color-dot{
-  width:28px;height:28px;border-radius:50%;border:2px solid transparent;
-  cursor:pointer;transition:transform .15s;
-}
-.color-dot:hover{transform:scale(1.15)}
-.color-dot.active{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
-
-.wallpaper-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
-.wp-thumb{
-  aspect-ratio:1;border-radius:8px;cursor:pointer;
-  border:2px solid transparent;transition:transform .15s;
-  background-size:cover;background-position:center;
-}
-.wp-thumb:hover{transform:scale(1.06)}
-.wp-thumb.active{border-color:var(--accent)}
-
-/* ===== COMMAND PALETTE ===== */
-#cmdPalette{
-  position:fixed;inset:0;z-index:3000;
-  background:rgba(0,0,0,.5);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  display:flex;align-items:flex-start;justify-content:center;
-  padding-top:20vh;
-  opacity:0;pointer-events:none;
-  transition:opacity .2s;
-}
-#cmdPalette.show{opacity:1;pointer-events:auto}
-#cmdBox{
-  width:min(560px,92vw);
-  background:var(--panel-bg);
-  backdrop-filter:blur(30px) saturate(180%);
-  -webkit-backdrop-filter:blur(30px) saturate(180%);
-  border:1px solid var(--panel-border);
-  border-radius:16px;overflow:hidden;
-  box-shadow:0 30px 80px -20px rgba(0,0,0,.8);
-  transform:scale(.96);transition:transform .25s cubic-bezier(.2,.9,.3,1.15);
-}
-#cmdPalette.show #cmdBox{transform:scale(1)}
-#cmdInput{
-  width:100%;padding:18px 22px;
-  background:transparent;border:none;
-  color:var(--text);font-size:16px;font-family:inherit;
-  outline:none;
-}
-#cmdInput::placeholder{color:var(--muted)}
-#cmdResults{max-height:340px;overflow-y:auto;border-top:1px solid var(--panel-border)}
-.cmd-item{
-  padding:12px 22px;cursor:pointer;
-  display:flex;align-items:center;gap:12px;
-  color:var(--text);font-size:13.5px;
-  transition:background .15s;
-}
-.cmd-item:hover,.cmd-item.sel{background:rgba(255,255,255,.08)}
-.cmd-item .ci-ic{font-size:18px;width:24px;text-align:center}
-.cmd-item .ci-kbd{margin-left:auto;font-size:10.5px;color:var(--muted);font-family:ui-monospace,monospace}
-
-/* ===== APP-SPECIFIC ===== */
-/* Terminal */
-.terminal{
-  background:#0a0a0f!important;
-  font-family:ui-monospace,'SF Mono',Menlo,monospace;
-  font-size:12.5px;line-height:1.6;
-  padding:16px 18px;
-  color:#e4e4e7;
-}
-.terminal .line{white-space:pre-wrap;word-break:break-word}
-.terminal .prompt{color:#7c6cff;font-weight:600}
-.terminal .path{color:#4ec9b0}
-.terminal .ok{color:#4ade80}
-.terminal .err{color:#f87171}
-.terminal .warn{color:#fbbf24}
-.terminal-input{
-  background:transparent;border:none;outline:none;
-  color:inherit;font:inherit;width:100%;
-  padding:0;margin:0;
-}
-.term-row{display:flex;gap:8px;align-items:center}
-
-/* Notes */
-.note-area{
-  width:100%;height:100%;min-height:300px;
-  background:transparent;border:none;outline:none;
-  color:inherit;font-family:inherit;font-size:14px;line-height:1.7;
-  resize:none;padding:0;
-}
-.note-area::placeholder{color:var(--muted)}
-.note-meta{font-size:11px;color:var(--muted);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--panel-border)}
-
-/* Files */
-.file-list{display:flex;flex-direction:column;gap:2px}
-.file-item{
-  padding:10px 12px;border-radius:8px;
-  display:flex;align-items:center;gap:12px;
-  cursor:pointer;transition:background .15s;
-  color:var(--text);
-}
-.file-item:hover{background:rgba(255,255,255,.08)}
-.file-item .fi-ic{font-size:20px;width:24px;text-align:center}
-.file-item .fi-name{flex:1;font-size:13px;font-weight:500}
-.file-item .fi-size{font-size:11px;color:var(--muted)}
-
-/* Calculator */
-.calc-display{
-  background:rgba(0,0,0,.25);
-  border-radius:12px;padding:18px;
-  text-align:right;margin-bottom:12px;
-  font-family:ui-monospace,monospace;
-}
-.calc-display .expr{font-size:12px;color:var(--muted);min-height:16px}
-.calc-display .val{font-size:32px;font-weight:600;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.calc-btn{
-  aspect-ratio:1.3;border:none;border-radius:10px;
-  background:rgba(255,255,255,.08);
-  color:var(--text);font-size:17px;font-weight:500;
-  cursor:pointer;transition:background .15s,transform .1s;
-  font-family:inherit;
-}
-.calc-btn:hover{background:rgba(255,255,255,.15)}
-.calc-btn:active{transform:scale(.94)}
-.calc-btn.op{background:rgba(124,108,255,.2);color:#b8b0ff}
-.calc-btn.eq{background:var(--accent);color:#fff}
-.calc-btn.eq:hover{background:#8a7cff}
-
-/* Music */
-.music-player{text-align:center;padding:10px 0}
-.music-cover{
-  width:180px;height:180px;margin:0 auto 20px;
-  border-radius:16px;
-  background:linear-gradient(135deg,#667eea,#764ba2);
-  display:flex;align-items:center;justify-content:center;
-  font-size:60px;
-  box-shadow:0 20px 40px -15px rgba(124,108,255,.5);
-  transition:transform .3s;
-}
-.music-player.playing .music-cover{animation:coverPulse 3s ease-in-out infinite}
-@keyframes coverPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
-.music-title{font-size:16px;font-weight:600;margin-bottom:4px}
-.music-artist{font-size:12px;color:var(--muted);margin-bottom:20px}
-.music-progress{
-  height:4px;background:rgba(255,255,255,.15);border-radius:2px;
-  margin:16px 0 8px;overflow:hidden;cursor:pointer;
-}
-.music-bar{height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width .3s}
-.music-time{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
-.music-ctrl{display:flex;justify-content:center;gap:16px;margin-top:20px}
-.music-btn{
-  width:44px;height:44px;border-radius:50%;border:none;
-  background:rgba(255,255,255,.08);color:var(--text);
-  cursor:pointer;font-size:16px;
-  display:flex;align-items:center;justify-content:center;
-  transition:background .15s,transform .12s;
-}
-.music-btn:hover{background:rgba(255,255,255,.16)}
-.music-btn:active{transform:scale(.92)}
-.music-btn.play{width:56px;height:56px;background:var(--accent);font-size:20px}
-
-/* Settings */
-.settings-section{margin-bottom:22px}
-.settings-section h4{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
-.settings-row{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:12px 14px;border-radius:10px;
-  background:rgba(255,255,255,.05);
-  margin-bottom:6px;font-size:13px;
-}
-.toggle{
-  width:44px;height:26px;border-radius:13px;
-  background:rgba(255,255,255,.15);
-  border:none;cursor:pointer;position:relative;
-  transition:background .2s;
-}
-.toggle::after{
-  content:'';position:absolute;left:3px;top:3px;
-  width:20px;height:20px;border-radius:50%;
-  background:#fff;transition:transform .2s;
-}
-.toggle.on{background:var(--accent)}
-.toggle.on::after{transform:translateX(18px)}
-
-/* Toast */
-#toastContainer{
-  position:fixed;bottom:calc(var(--taskbar-h) + 30px);right:20px;
-  z-index:4000;display:flex;flex-direction:column;gap:8px;
-  pointer-events:none;
-}
-.toast{
-  padding:12px 18px;border-radius:12px;
-  background:var(--panel-bg);
-  backdrop-filter:blur(20px) saturate(180%);
-  -webkit-backdrop-filter:blur(20px) saturate(180%);
-  border:1px solid var(--panel-border);
-  color:var(--text);font-size:12.5px;
-  box-shadow:0 20px 40px -15px rgba(0,0,0,.6);
-  animation:toastIn .3s cubic-bezier(.2,.9,.3,1.15);
-  display:flex;align-items:center;gap:10px;
-}
-@keyframes toastIn{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
-.toast.out{animation:toastOut .25s ease forwards}
-@keyframes toastOut{to{opacity:0;transform:translateX(60px)}}
-
-/* Boot screen */
-#boot{
-  position:fixed;inset:0;z-index:9000;
-  background:#0a0a0f;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  color:#fff;gap:20px;
-  transition:opacity .6s ease;
-}
-#boot.hide{opacity:0;pointer-events:none}
-.boot-logo{font-size:36px;font-weight:700;letter-spacing:-.02em;background:linear-gradient(135deg,#7c6cff,#a89bff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.boot-bar{width:180px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
-.boot-bar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,#7c6cff,#a89bff);animation:bootLoad 1.6s cubic-bezier(.2,.9,.3,1) forwards}
-@keyframes bootLoad{to{width:100%}}
-.boot-text{font-size:11px;color:#666;letter-spacing:.15em;text-transform:uppercase}
 </style>
 </head>
 <body>
 
-<div id="boot">
-  <div class="boot-logo">NexusOS</div>
-  <div class="boot-bar"><i></i></div>
-  <div class="boot-text">Loading desktop environment</div>
-</div>
-
-<div id="desktop">
-  <div id="desktopIcons"></div>
-  <div id="windowsLayer"></div>
-</div>
-
-<div id="taskbar">
-  <button class="tb-btn launcher" id="launcherBtn" title="Launcher">⊞</button>
-  <div id="taskItems"></div>
-  <div class="tb-divider"></div>
-  <button class="tb-btn" id="qsBtn" title="Quick Settings">⚙</button>
-  <button class="tray-btn" id="clockBtn">
-    <span id="clock">
-      <span class="time" id="clockTime">00:00</span>
-      <span class="date" id="clockDate">—</span>
-    </span>
-  </button>
-</div>
-
-<div id="launcher">
-  <input type="text" id="launcherSearch" placeholder="Cari aplikasi..." autocomplete="off">
-  <div id="appGrid"></div>
-</div>
-
-<div id="quickSettings">
-  <div class="qs-title">Quick Settings</div>
-  <div class="qs-grid">
-    <button class="qs-tile on" id="qsTheme"><span class="ic">🌙</span><span>Dark Mode</span></button>
-    <button class="qs-tile" id="qsWifi"><span class="ic">📶</span><span>Wi-Fi</span></button>
-    <button class="qs-tile" id="qsDnd"><span class="ic">🌜</span><span>Do Not Disturb</span></button>
-    <button class="qs-tile" id="qsFocus"><span class="ic">🎯</span><span>Focus</span></button>
+<div id="cmdWin">
+  <div id="titlebar">
+    <div class="tb-icon">C:\</div>
+    <div class="tb-title" id="winTitle">Command Prompt</div>
+    <div class="tb-ctrl">
+      <button class="tb-btn" title="Minimize">─</button>
+      <button class="tb-btn" title="Maximize">□</button>
+      <button class="tb-btn close" title="Close" onclick="if(window.__cmd)window.__cmd.exit()">✕</button>
+    </div>
   </div>
-  <div class="qs-title">Brightness</div>
-  <input type="range" class="slider" id="qsBright" min="30" max="100" value="100" style="margin-bottom:16px">
-  <div class="qs-title">Accent Color</div>
-  <div class="color-dots" id="accentDots" style="margin-bottom:16px"></div>
-  <div class="qs-title">Wallpaper</div>
-  <div class="wallpaper-strip" id="wallpaperStrip"></div>
-</div>
-
-<div id="cmdPalette">
-  <div id="cmdBox">
-    <input type="text" id="cmdInput" placeholder="Ketik perintah atau nama aplikasi..." autocomplete="off">
-    <div id="cmdResults"></div>
+  <div id="screen" tabindex="0">
+    <div id="output"></div>
+    <div id="inputLine">
+      <span id="promptTxt"></span>
+      <input id="cmdInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    </div>
   </div>
 </div>
-
-<div id="toastContainer"></div>
 
 <script>
-/* ==========================================================
-   NexusOS — Web Desktop Environment
-   ========================================================== */
+/* ============================================================
+   Windows Command Prompt Emulator
+   ============================================================ */
 
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
-
-/* ===== STATE ===== */
-const State = {
-  windows: new Map(),
-  zTop: 100,
-  focused: null,
-  nextId: 1,
-  theme: 'dark',
-  accent: '#7c6cff',
-  wallpaper: 0,
-  brightness: 100
-};
-
-/* ===== WALLPAPERS ===== */
-const WALLPAPERS = [
-  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80',
-  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1920&q=80',
-  'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1920&q=80',
-  'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920&q=80',
-  'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=1920&q=80',
-  'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80',
-  'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?w=1920&q=80',
-  'https://images.unsplash.com/photo-1435224668334-0f82ec57b605?w=1920&q=80'
-];
-
-const ACCENTS = ['#7c6cff','#ff6b9d','#4ade80','#fbbf24','#f87171','#22d3ee','#a78bfa','#fb923c'];
-
-/* ===== APPS REGISTRY ===== */
-const Apps = {
-  files: { name:'Files', icon:'📁', color:'linear-gradient(135deg,#f59e0b,#fbbf24)', render:renderFiles, w:520, h:420 },
-  terminal: { name:'Terminal', icon:'⌨', color:'linear-gradient(135deg,#1e1e2e,#2d2d44)', render:renderTerminal, w:600, h:400 },
-  notes: { name:'Notes', icon:'📝', color:'linear-gradient(135deg,#fbbf24,#f59e0b)', render:renderNotes, w:520, h:480 },
-  calculator: { name:'Calculator', icon:'🧮', color:'linear-gradient(135deg,#8b5cf6,#a78bfa)', render:renderCalculator, w:340, h:480 },
-  music: { name:'Music', icon:'🎵', color:'linear-gradient(135deg,#ec4899,#f472b6)', render:renderMusic, w:380, h:520 },
-  settings: { name:'Settings', icon:'⚙', color:'linear-gradient(135deg,#71717a,#a1a1aa)', render:renderSettings, w:480, h:520 },
-  about: { name:'About', icon:'✨', color:'linear-gradient(135deg,#7c6cff,#a89bff)', render:renderAbout, w:420, h:380 }
-};
-
-/* ===== MOCK FILE SYSTEM ===== */
-const FS = {
-  '/': [
-    { name:'Documents', type:'folder', size:null },
-    { name:'Pictures', type:'folder', size:null },
-    { name:'Music', type:'folder', size:null },
-    { name:'Projects', type:'folder', size:null },
-    { name:'readme.md', type:'file', size:'2.1 KB', content:'# NexusOS\n\nSelamat datang di desktop environment berbasis web.\n\n- Drag titlebar untuk pindah window\n- Klik pojok kanan bawah untuk resize\n- ⌘K / Ctrl+K untuk command palette\n- Klik kanan untuk konteks menu' },
-    { name:'about.txt', type:'file', size:'1.2 KB', content:'NexusOS v1.0\nDibuat dengan HTML, CSS, dan JavaScript murni.\nTanpa framework. Tanpa dependency.' },
-    { name:'config.json', type:'file', size:'340 B', content:'{\n  "version": "1.0.0",\n  "theme": "dark",\n  "accent": "#7c6cff"\n}' }
-  ]
-};
-
-/* ===== UTILS ===== */
-function toast(msg, icon='✨'){
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
-  $('#toastContainer').appendChild(el);
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 250); }, 2600);
+function makeFS() {
+  return {
+    'C:': {
+      type: 'drive',
+      children: {
+        'Windows': {
+          type: 'dir',
+          children: {
+            'System32': {
+              type: 'dir',
+              children: {
+                'cmd.exe': { type: 'file', size: 289792, content: 'MZ\x90\x00 Binary executable' },
+                'notepad.exe': { type: 'file', size: 201216, content: 'MZ\x90\x00 Binary executable' },
+                'calc.exe': { type: 'file', size: 27392, content: 'MZ\x90\x00 Binary executable' },
+                'drivers': {
+                  type: 'dir',
+                  children: {
+                    'etc': {
+                      type: 'dir',
+                      children: {
+                        'hosts': {
+                          type: 'file', size: 824,
+                          content: '# Copyright (c) 1993-2009 Microsoft Corp.\n#\n# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.\n#\n127.0.0.1       localhost\n::1             localhost'
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            'Temp': { type: 'dir', children: {} },
+            'win.ini': { type: 'file', size: 92, content: '; for 16-bit app support\n[fonts]\n[extensions]\n[mci extensions]' }
+          }
+        },
+        'Users': {
+          type: 'dir',
+          children: {
+            'Guest': {
+              type: 'dir',
+              children: {
+                'Desktop': {
+                  type: 'dir',
+                  children: {
+                    'NexusOS.lnk': { type: 'file', size: 1024, content: '' }
+                  }
+                },
+                'Documents': {
+                  type: 'dir',
+                  children: {
+                    'notes.txt': { type: 'file', size: 245, content: 'Catatan pribadi\n===============\n- Beli kopi\n- Update NexusOS ke v2.0\n- Coba Windows CMD emulator' },
+                    'todo.md': { type: 'file', size: 187, content: '# TODO\n\n- [ ] Bikin fitur X\n- [x] Deploy NexusOS\n- [x] Windows CMD emulator' },
+                    'readme.txt': { type: 'file', size: 178, content: 'Selamat datang di Windows CMD emulator!\n\nKetik HELP untuk daftar perintah.\nKetik DIR untuk lihat isi folder.' }
+                  }
+                },
+                'Downloads': {
+                  type: 'dir',
+                  children: {
+                    'installer.exe': { type: 'file', size: 45872128, content: '' },
+                    'wallpaper.jpg': { type: 'file', size: 2048576, content: '' },
+                    'archive.zip': { type: 'file', size: 10485760, content: '' }
+                  }
+                },
+                'Music': {
+                  type: 'dir',
+                  children: {
+                    'track01.mp3': { type: 'file', size: 5242880, content: '' },
+                    'track02.mp3': { type: 'file', size: 4718592, content: '' }
+                  }
+                },
+                'Pictures': { type: 'dir', children: {} },
+                'Videos': { type: 'dir', children: {} }
+              }
+            }
+          }
+        },
+        'Program Files': {
+          type: 'dir',
+          children: {
+            'NexusOS': {
+              type: 'dir',
+              children: {
+                'nexus.exe': { type: 'file', size: 1048576, content: '' },
+                'readme.txt': { type: 'file', size: 512, content: 'NexusOS v1.0\nInstalled at C:\\Program Files\\NexusOS\n\nRun nexus.exe to start.' }
+              }
+            }
+          }
+        },
+        'temp': { type: 'dir', children: {} },
+        'autoexec.bat': { type: 'file', size: 78, content: '@echo off\necho Welcome to NexusOS\npause' },
+        'config.sys': { type: 'file', size: 0, content: '' }
+      }
+    }
+  };
 }
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* ============================================================
+   Path utilities
+   ============================================================ */
+function splitPath(p) {
+  return p.split('\\').filter(s => s.length > 0);
+}
+function joinPath(parts) {
+  if (!parts.length) return '';
+  return parts.join('\\');
+}
+function normalizePath(input, cwd) {
+  input = (input || '').replace(/\//g, '\\').trim();
+  if (!input) return cwd;
+  let full;
+  // Absolute with drive: C:\...
+  if (/^[A-Za-z]:/.test(input)) {
+    full = input;
+  } else if (input.startsWith('\\')) {
+    // Absolute from drive root
+    const drive = cwd.substring(0, 2);
+    full = drive + input;
+  } else {
+    full = cwd + '\\' + input;
+  }
+  // Extract drive
+  const drive = full.substring(0, 2).toUpperCase();
+  let rest = full.substring(2).replace(/^\\+/, '');
+  const parts = [];
+  for (const seg of rest.split('\\')) {
+    if (!seg || seg === '.') continue;
+    if (seg === '..') { parts.pop(); continue; }
+    parts.push(seg);
+  }
+  return drive + (parts.length ? '\\' + parts.join('\\') : '\\');
+}
+function parentPath(p) {
+  const norm = p.replace(/\\+$/, '');
+  const idx = norm.lastIndexOf('\\');
+  if (idx <= 2) return norm.substring(0, 2) + '\\';
+  return norm.substring(0, idx);
+}
+function baseName(p) {
+  const norm = p.replace(/\\+$/, '');
+  const idx = norm.lastIndexOf('\\');
+  return norm.substring(idx + 1);
+}
+function fileExt(name) {
+  const i = name.lastIndexOf('.');
+  return i > 0 ? name.substring(i) : '';
+}
+function fmtBytes(b) {
+  if (b === 0) return '0';
+  return b.toLocaleString('en-US');
+}
+function fmtDate(d) {
+  const pad = n => String(n).padStart(2, '0');
+  let h = d.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return pad(d.getMonth()+1) + '/' + pad(d.getDate()) + '/' + d.getFullYear() +
+         '  ' + pad(h) + ':' + pad(d.getMinutes()) + ' ' + ampm;
 }
 
-function applyTheme(){
-  document.body.classList.toggle('light', State.theme === 'light');
-}
+/* ============================================================
+   WindowsCMD Class
+   ============================================================ */
+class WindowsCMD {
+  constructor(opts = {}) {
+    this.outputEl = opts.output || document.getElementById('output');
+    this.inputEl  = opts.input  || document.getElementById('cmdInput');
+    this.promptEl = opts.promptTxt || document.getElementById('promptTxt');
+    this.titleEl  = opts.titleEl || document.getElementById('winTitle');
+    this.onExit   = opts.onExit  || (() => {});
+    this.onOpenApp = opts.onOpenApp || (() => {});
 
-function applyAccent(){
-  document.documentElement.style.setProperty('--accent', State.accent);
-  document.documentElement.style.setProperty('--accent-glow', State.accent + '66');
-  $$('.color-dot').forEach(d => d.classList.toggle('active', d.dataset.color === State.accent));
-}
+    this.fs = makeFS();
+    this.cwd = 'C:\\Users\\Guest';
+    this.env = {
+      USERNAME: 'Guest',
+      USERPROFILE: 'C:\\Users\\Guest',
+      COMPUTERNAME: 'NEXUS-PC',
+      OS: 'Windows_NT',
+      PATH: 'C:\\Windows\\System32;C:\\Windows',
+      TEMP: 'C:\\Users\\Guest\\AppData\\Local\\Temp',
+      TMP: 'C:\\Users\\Guest\\AppData\\Local\\Temp',
+      SYSTEMROOT: 'C:\\Windows',
+      WINDIR: 'C:\\Windows',
+      PROMPT: '$P$G',
+      CD: this.cwd,
+      RANDOM: '0'
+    };
+    this.history = [];
+    this.histIdx = 0;
+    this.echoOn = true;
+    this.color = { fg: '#cccccc', bg: '#0c0c0c' };
+    this.running = true;
+    this.waitingFor = null;
 
-function applyWallpaper(){
-  $('#desktop').style.backgroundImage = `linear-gradient(rgba(0,0,0,${State.theme==='light'?0.05:0.25}),rgba(0,0,0,${State.theme==='light'?0.1:0.4})), url("${WALLPAPERS[State.wallpaper]}")`;
-}
+    this.commands = this.buildCommands();
+    this.bindInput();
 
-function applyBrightness(){
-  $('#desktop').style.filter = `brightness(${State.brightness/100})`;
-}
+    this.writeLine('Microsoft Windows [Version 10.0.22631.3007]');
+    this.writeLine('(c) Microsoft Corporation. All rights reserved.');
+    this.writeLine('');
+    this.updatePrompt();
+    setTimeout(() => this.inputEl.focus(), 50);
+  }
 
-/* ==========================================================
-   WINDOW MANAGER
-   ========================================================== */
-function openApp(id){
-  const app = Apps[id];
-  if(!app) return;
-  // Focus existing window if already open
-  for(const [wid, w] of State.windows){
-    if(w.appId === id){
-      if(w.minimized) toggleMinimize(wid);
-      focusWindow(wid);
+  /* ---------- Output helpers ---------- */
+  write(text, cls) {
+    const span = document.createElement('span');
+    if (cls) span.className = cls;
+    span.textContent = text;
+    this.outputEl.appendChild(span);
+  }
+  writeLine(text, cls) {
+    this.write(text, cls);
+    this.outputEl.appendChild(document.createTextNode('\n'));
+    this.scrollBottom();
+  }
+  writeHTML(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    this.outputEl.appendChild(div);
+    this.scrollBottom();
+  }
+  scrollBottom() {
+    const s = document.getElementById('screen');
+    if (s) s.scrollTop = s.scrollHeight;
+  }
+  clear() {
+    this.outputEl.innerHTML = '';
+    this.scrollBottom();
+  }
+
+  /* ---------- Prompt & env var expansion ---------- */
+  expandVars(str) {
+    if (!str) return '';
+    return str.replace(/%([A-Za-z_][A-Za-z0-9_]*)%/g, (m, name) => {
+      const key = name.toUpperCase();
+      if (key === 'CD') return this.cwd;
+      if (key === 'DATE') return new Date().toLocaleDateString('en-US');
+      if (key === 'TIME') return new Date().toLocaleTimeString('en-US');
+      if (key === 'RANDOM') return String(Math.floor(Math.random() * 32768));
+      return this.env[key] !== undefined ? this.env[key] : '%' + name + '%';
+    });
+  }
+  getPromptString() {
+    const tmpl = this.env.PROMPT || '$P$G';
+    let out = '';
+    for (let i = 0; i < tmpl.length; i++) {
+      const c = tmpl[i];
+      if (c === '$' && i + 1 < tmpl.length) {
+        const n = tmpl[++i];
+        switch (n) {
+          case 'P': out += this.cwd; break;
+          case 'G': out += '>'; break;
+          case 'L': out += '<'; break;
+          case 'N': out += 'C'; break;
+          case 'D': out += fmtDate(new Date()).split('  ')[0]; break;
+          case 'T': out += fmtDate(new Date()).split('  ')[1]; break;
+          case 'B': out += '|'; break;
+          case '_': out += ' '; break;
+          case '$': out += '$'; break;
+          default: out += '$' + n;
+        }
+      } else {
+        out += c;
+      }
+    }
+    return out;
+  }
+  updatePrompt() {
+    this.promptEl.textContent = this.getPromptString();
+  }
+
+  /* ---------- FS helpers ---------- */
+  getNode(path) {
+    const norm = normalizePath(path, this.cwd);
+    const parts = splitPath(norm);
+    if (!parts.length) return null;
+    const drive = parts[0].toUpperCase() + ':';
+    let node = this.fs[drive];
+    if (!node) return null;
+    for (let i = 1; i < parts.length; i++) {
+      if (!node.children) return null;
+      const key = Object.keys(node.children).find(k => k.toLowerCase() === parts[i].toLowerCase());
+      if (!key) return null;
+      node = node.children[key];
+    }
+    return node;
+  }
+  getParentNode(path) {
+    return this.getNode(parentPath(normalizePath(path, this.cwd)));
+  }
+  getKeyInParent(path) {
+    return baseName(normalizePath(path, this.cwd));
+  }
+  ensureDir(path) {
+    const norm = normalizePath(path, this.cwd);
+    const parts = splitPath(norm);
+    if (!parts.length) return null;
+    const drive = parts[0].toUpperCase() + ':';
+    if (!this.fs[drive]) this.fs[drive] = { type: 'drive', children: {} };
+    let node = this.fs[drive];
+    for (let i = 1; i < parts.length; i++) {
+      const name = parts[i];
+      const key = Object.keys(node.children).find(k => k.toLowerCase() === name.toLowerCase());
+      if (key) {
+        node = node.children[key];
+        if (node.type !== 'dir') return null;
+      } else {
+        node.children[name] = { type: 'dir', children: {} };
+        node = node.children[name];
+      }
+    }
+    return node;
+  }
+
+  /* ---------- Command builder ---------- */
+  buildCommands() {
+    const self = this;
+    const C = {};
+
+    /* ----- help ----- */
+    C.help = {
+      desc: 'Provides Help information for Windows commands.',
+      run: () => {
+        self.writeLine('For more information on a specific command, type HELP command-name');
+        self.writeLine('');
+        const names = Object.keys(self.commands).filter(k => self.commands[k].desc).sort();
+        const groups = {};
+        names.forEach(n => {
+          const first = n[0].toUpperCase();
+          (groups[first] = groups[first] || []).push(n.toUpperCase());
+        });
+        Object.keys(groups).sort().forEach(letter => {
+          self.writeLine(groups[letter].join('  '));
+        });
+        self.writeLine('');
+      }
+    };
+
+    /* ----- cls ----- */
+    C.cls = { desc: 'Clears the screen.', run: () => self.clear() };
+
+    /* ----- exit ----- */
+    C.exit = {
+      desc: 'Quits the CMD.EXE program.',
+      run: (args) => {
+        if (args.includes('/b')) return 'exit_batch';
+        self.writeLine('');
+        self.running = false;
+        setTimeout(() => self.onExit(), 100);
+      }
+    };
+
+    /* ----- ver ----- */
+    C.ver = { desc: 'Displays the Windows version.', run: () => self.writeLine('\nMicrosoft Windows [Version 10.0.22631.3007]\n') };
+
+    /* ----- echo ----- */
+    C.echo = {
+      desc: 'Displays messages, or turns command-echoing on or off.',
+      run: (args, raw) => {
+        if (!args.length) { self.writeLine('ECHO is on.'); return; }
+        if (args[0].toLowerCase() === 'off') { self.echoOn = false; return; }
+        if (args[0].toLowerCase() === 'on') { self.echoOn = true; return; }
+        let text = raw.replace(/^echo\s*/i, '');
+        if (text === '.') { self.writeLine(''); return; }
+        text = self.expandVars(text);
+        self.writeLine(text);
+      }
+    };
+
+    /* ----- dir ----- */
+    C.dir = {
+      desc: 'Displays a list of files and subdirectories in a directory.',
+      run: (args) => {
+        const flags = args.filter(a => a.startsWith('/'));
+        const paths = args.filter(a => !a.startsWith('/'));
+        const target = paths[0] || self.cwd;
+        const bare = flags.some(f => /^\/b$/i.test(f));
+        const wide = flags.some(f => /^\/w$/i.test(f));
+        const recurse = flags.some(f => /^\/s$/i.test(f));
+        const node = self.getNode(target);
+        if (!node) { self.writeLine('File Not Found', 'err'); return; }
+        if (node.type === 'file') {
+          self.printFileLine(baseName(target), node, bare);
+          return;
+        }
+        const norm = normalizePath(target, self.cwd);
+        if (!bare) {
+          self.writeLine('');
+          self.writeLine(' Volume in drive C has no label.');
+          self.writeLine(' Volume Serial Number is A1B2-C3D4');
+          self.writeLine('');
+          self.writeLine(' Directory of ' + norm);
+          self.writeLine('');
+        }
+        const entries = [];
+        for (const [name, child] of Object.entries(node.children)) {
+          if (child.hidden) continue;
+          entries.push({ name, node: child });
+        }
+        entries.sort((a, b) => {
+          if (a.node.type === b.node.type) return a.name.localeCompare(b.name);
+          return a.node.type === 'dir' ? -1 : 1;
+        });
+        let totalBytes = 0, fileCount = 0, dirCount = 0;
+        if (wide) {
+          const cols = [];
+          entries.forEach(e => {
+            const nm = e.name;
+            if (e.node.type === 'dir') { cols.push(('[' + nm.toUpperCase() + ']').padEnd(14)); dirCount++; }
+            else { cols.push(nm.padEnd(14)); fileCount++; totalBytes += e.node.size || 0; }
+          });
+          for (let i = 0; i < cols.length; i += 5) {
+            self.writeLine(cols.slice(i, i + 5).join(''));
+          }
+        } else if (bare) {
+          entries.forEach(e => self.writeLine(e.name));
+        } else {
+          for (const e of entries) {
+            self.writeLine(self.formatDirLine(e.name, e.node));
+          }
+        }
+        if (!bare && !wide) {
+          self.writeLine('');
+          self.writeLine('               ' + fileCount + ' File(s)  ' + fmtBytes(totalBytes) + ' bytes');
+          self.writeLine('               ' + dirCount + ' Dir(s)   45,678,901,234 bytes free');
+          self.writeLine('');
+        }
+      }
+    };
+    C.directory = C.dir;
+
+    /* ----- cd / chdir ----- */
+    C.cd = {
+      desc: 'Displays the name of or changes the current directory.',
+      run: (args) => {
+        if (!args.length) { self.writeLine(self.cwd); return; }
+        const target = args[0];
+        // Handle "cd .." or "cd\" from drive root
+        if (target === '..') {
+          const parent = parentPath(self.cwd);
+          const node = self.getNode(parent);
+          if (node && node.type === 'dir') { self.cwd = parent; return; }
+          return;
+        }
+        const norm = normalizePath(target, self.cwd);
+        const node = self.getNode(norm);
+        if (!node) { self.writeLine('The system cannot find the path specified.', 'err'); return; }
+        if (node.type !== 'dir') { self.writeLine('The directory name is invalid.', 'err'); return; }
+        self.cwd = norm.replace(/\\+$/, '') || 'C:\\';
+      }
+    };
+    C.chdir = C.cd;
+
+    /* ----- md / mkdir ----- */
+    C.md = {
+      desc: 'Creates a directory.',
+      run: (args) => {
+        if (!args.length) { self.writeLine('The syntax of the command is incorrect.', 'err'); return; }
+        const path = normalizePath(args[0], self.cwd);
+        if (self.getNode(path)) { self.writeLine('A subdirectory or file ' + args[0] + ' already exists.', 'err'); return; }
+        const node = self.ensureDir(path);
+        if (!node) self.writeLine('The system cannot find the path specified.', 'err');
+      }
+    };
+    C.mkdir = C.md;
+
+    /* ----- rd / rmdir ----- */
+    C.rd = {
+      desc: 'Removes a directory.',
+      run: (args) => {
+        const flags = args.filter(a => a.startsWith('/'));
+        const paths = args.filter(a => !a.startsWith('/'));
+        if (!paths.length) { self.writeLine('The syntax of the command is incorrect.', 'err'); return; }
+        const path = normalizePath(paths[0], self.cwd);
+        if (path.replace(/\\+$/, '').toLowerCase() === self.cwd.replace(/\\+$/, '').toLowerCase()) {
+          self.writeLine('The process cannot access the file because it is being used by another process.', 'err'); return;
+        }
+        const node = self.getNode(path);
+        if (!node) { self.writeLine('The system cannot find the file specified.', 'err'); return; }
+        if (node.type !== 'dir') { self.writeLine('The directory name is invalid.', 'err'); return; }
+        const isEmpty = !node.children || Object.keys(node.children).length === 0;
+        const recursive = flags.some(f => /^\/s$/i.test(f));
+        if (!isEmpty && !recursive) {
+          self.writeLine('The directory is not empty.', 'err'); return;
+        }
+        const parent = self.getParentNode(path);
+        const key = self.getKeyInParent(path);
+        if (parent) {
+          const k = Object.keys(parent.children).find(x => x.toLowerCase() === key.toLowerCase());
+          if (k) delete parent.children[k];
+        }
+      }
+    };
+    C.rmdir = C.rd;
+
+    /* ----- del / erase ----- */
+    C.del = {
+      desc: 'Deletes one or more files.',
+      run: (args) => {
+        const paths = args.filter(a => !a.startsWith('/'));
+        if (!paths.length) { self.writeLine('The syntax of the command is incorrect.', 'err'); return; }
+        const path = normalizePath(paths[0], self.cwd);
+        const node = self.getNode(path);
+        if (!node) { self.writeLine('Could Not Find ' + path, 'err'); return; }
+        if (node.type === 'dir') { self.writeLine(path + '\\*', 'err'); self.writeLine('Access is denied.', 'err'); return; }
+        const parent = self.getParentNode(path);
+        const key = self.getKeyInParent(path);
+        if (parent) {
+          const k = Object.keys(parent.children).find(x => x.toLowerCase() === key.toLowerCase());
+          if (k) delete parent.children[k];
+        }
+      }
+    };
+    C.erase = C.del;
+
+    /* ----- copy ----- */
+    C.copy = {
+      desc: 'Copies one or more files to another location.',
+      run: (args) => {
+        const paths = args.filter(a => !a.startsWith('/'));
+        if (paths.length < 2) { self.writeLine('The syntax of the command is incorrect.', 'err'); return; }
+        const src = normalizePath(paths[0], self.cwd);
+        const dst = normalizePath(paths[1], self.cwd);
+        const srcNode = self.getNode(src);
+        if (!srcNode) { self.writeLine('The system cannot find the file specified.', 'err'); return; }
+        const dstNode = self.getNode(dst);
+        let finalPath = dst;
+        if (dstNode && dstNode.type === 'dir') {
+          finalPath = dst + '\\' + baseName(src);
+        }
+        const parent = self.ensureDir(parentPath(finalPath));
+        if (!parent) { self.writeLine('The system cannot find the path specified.', 'err'); return; }
+        const key = baseName(finalPath);
+        parent.children[key] = JSON.parse(JSON.stringify(srcNode));
+        self.writeLine('        1 file(s) copied.');
+      }
+    };
+
+    /* ----- move ----- */
+    C.move = {
+      desc: 'Moves files and renames files and directories.',
+      run: (args) => {
+        const paths = args.filter(a => !a.startsWith('/'));
+        if (paths.length < 2) { self.writeLine('The syntax of the command is incorrect.', 'err'); return; }
+        const src = normalizePath(paths[0], self.cwd);
+        let dst = normalizePath(paths[1], self.cwd);
+        const srcNode = self.getNode(src);
+        if (!srcNode) { self.writeLine('The system cannot find the file specified.', 'err'); return; }
+        const dstNode = self.getNode(dst);
+        if (dstNode && dstNode.type === 'dir') dst = dst + '\\' + baseName(src);
+        const parent = self.ensureDir(parentPath(dst));
+        if (!parent) { self.writeLine('The system cannot find the path specified.', 'err'); return; }
+        const k = baseName(dst);
+        parent.children[k] = srcNode;
+        const srcParent = self.getParentNode(src);
+        const srcKey = self.getKeyInParent(src);
+        if (srcParent) {
+          const sk = Object.keys(srcParent.children).find(x => x.toLowerCase() === srcKey.toLowerCase());
+          if (sk) delete srcParent.children[sk];
+        }
+        self.writeLine('        1 file(s) moved.');
+      }
+    };
+
+    /* ----- ren / rename ----- */
+    C.ren = {
+      desc: 'Renames a file or files.',
+      run: (args) => {
+        if (args.length < 2) { self.writeLine('The syntax of the command is incorrect.', 'err'); return; }
+        const src = normalizePath(args[0], self.cwd);
+        const newNodeName = args[1];
+        const parent = self.getParentNode(src);
+        const srcKey = self.getKeyInParent(src);
+        if (!parent) { self.writeLine('The system cannot find the file specified.', 'err'); return; }
+        const actualKey = Object.keys(parent.children).find(x => x.toLowerCase() === srcKey.toLowerCase());
+        if (!actualKey) { self.writeLine('The system cannot find the file specified.', 'err'); return; }
+        parent.children[newNodeName] = parent.children[actualKey];
+        delete parent.children[actualKey];
+      }
+    };
+    C.rename = C.ren;
+
+    /* ----- type ----- */
+    C.type = {
+      desc: 'Displays the contents of a text file.',
+      run: (args) => {
+        if (!args.length) { self.writeLine('The syntax of the command is incorrect.', 'err'); return; }
+        const path = normalizePath(args[0], self.cwd);
+        const node = self.getNode(path);
+        if (!node) { self.writeLine('The system cannot find the file specified.', 'err'); return; }
+        if (node.type === 'dir') { self.writeLine('Access is denied.', 'err'); return; }
+        (node.content || '').split('\n').forEach(l => self.writeLine(l));
+      }
+    };
+
+    /* ----- more ----- */
+    C.more = {
+      desc: 'Displays output one screen at a time.',
+      run: (args) => {
+        if (!args.length) { self.writeLine('The syntax of the command is incorrect.', 'err'); return; }
+        const path = normalizePath(args[0], self.cwd);
+        const node = self.getNode(path);
+        if (!node || node.type === 'dir') { self.writeLine('The system cannot find the file specified.', 'err'); return; }
+        (node.content || '').split('\n').forEach(l => self.writeLine(l));
+      }
+    };
+
+    /* ----- tree ----- */
+    C.tree = {
+      desc: 'Graphically displays the directory structure.',
+      run: (args) => {
+        const target = args.find(a => !a.startsWith('/')) || self.cwd;
+        const norm = normalizePath(target, self.cwd);
+        const node = self.getNode(norm);
+        if (!node || node.type !== 'dir') { self.writeLine('Invalid path - ' + target, 'err'); return; }
+        self.writeLine('Folder PATH listing for volume C');
+        self.writeLine('Volume serial number is A1B2-C3D4');
+        self.writeLine(norm);
+        const walk = (n, prefix) => {
+          const keys = Object.keys(n.children || {}).sort();
+          keys.forEach((k, i) => {
+            const last = i === keys.length - 1;
+            const child = n.children[k];
+            self.writeLine(prefix + (last ? '└───' : '├───') + k);
+            if (child.type === 'dir') walk(child, prefix + (last ? '    ' : '│   '));
+          });
+        };
+        walk(node, '');
+      }
+    };
+
+    /* ----- attrib ----- */
+    C.attrib = {
+      desc: 'Displays or changes file attributes.',
+      run: (args) => {
+        const paths = args.filter(a => !a.startsWith('+') && !a.startsWith('-') && !a.startsWith('/'));
+        if (!paths.length) {
+          self.writeLine('A            C:\\autoexec.bat');
+          self.writeLine('A            C:\\config.sys');
+          return;
+        }
+        const path = normalizePath(paths[0], self.cwd);
+        const node = self.getNode(path);
+        if (!node) { self.writeLine('File not found - ' + paths[0], 'err'); return; }
+        self.writeLine('A          ' + path);
+      }
+    };
+
+    /* ----- find / findstr ----- */
+    C.find = {
+      desc: 'Searches for a text string in a file.',
+      run: (args) => {
+        const q = args.find(a => !a.startsWith('/'));
+        const file = args.filter(a => !a.startsWith('/'))[1];
+        if (!q || !file) { self.writeLine('FIND: Parameter format not correct', 'err'); return; }
+        const path = normalizePath(file, self.cwd);
+        const node = self.getNode(path);
+        if (!node || node.type === 'dir') { self.writeLine('FIND: File not found - ' + file, 'err'); return; }
+        const target = q.replace(/"/g, '');
+        let found = false;
+        (node.content || '').split('\n').forEach(l => {
+          if (l.toLowerCase().includes(target.toLowerCase())) {
+            self.writeLine(l); found = true;
+          }
+        });
+        if (!found) self.writeLine('---------- ' + baseName(path));
+      }
+    };
+    C.findstr = {
+      desc: 'Searches for strings in files.',
+      run: (args) => {
+        const q = args[0];
+        const file = args[1];
+        if (!q || !file) { self.writeLine('FINDSTR: Bad command line', 'err'); return; }
+        const path = normalizePath(file, self.cwd);
+        const node = self.getNode(path);
+        if (!node) { self.writeLine('FINDSTR: Cannot open ' + file, 'err'); return; }
+        try {
+          const re = new RegExp(q, 'i');
+          (node.content || '').split('\n').forEach(l => { if (re.test(l)) self.writeLine(l); });
+        } catch (e) { self.writeLine('FINDSTR: Bad regular expression', 'err'); }
+      }
+    };
+
+    /* ----- sort ----- */
+    C.sort = {
+      desc: 'Sorts input.',
+      run: (args) => {
+        const f = args.find(a => !a.startsWith('/'));
+        if (f) {
+          const path = normalizePath(f, self.cwd);
+          const node = self.getNode(path);
+          if (!node || node.type === 'dir') { self.writeLine('The system cannot find the file specified.', 'err'); return; }
+          (node.content || '').split('\n').sort().forEach(l => self.writeLine(l));
+        }
+      }
+    };
+
+    /* ----- date / time ----- */
+    C.date = {
+      desc: 'Displays or sets the date.',
+      run: () => {
+        self.writeLine('The current date is: ' + new Date().toLocaleDateString('en-US'));
+        self.writeLine('Enter the new date: (mm-dd-yy) [Enter = batal]');
+        self.waitingFor = { type: 'date' };
+      }
+    };
+    C.time = {
+      desc: 'Displays or sets the system time.',
+      run: () => {
+        self.writeLine('The current time is: ' + new Date().toLocaleTimeString('en-US'));
+        self.writeLine('Enter the new time: [Enter = batal]');
+        self.waitingFor = { type: 'time' };
+      }
+    };
+
+    /* ----- title ----- */
+    C.title = {
+      desc: 'Sets the window title for the command prompt.',
+      run: (args, raw) => {
+        const t = raw.replace(/^title\s*/i, '') || 'Command Prompt';
+        self.titleEl.textContent = 'C:\\Windows\\System32\\cmd.exe - ' + t;
+      }
+    };
+
+    /* ----- color ----- */
+    C.color = {
+      desc: 'Sets the default console foreground and background colors.',
+      run: (args) => {
+        const map = {
+          '0':'#0c0c0c','1':'#0037da','2':'#13a10e','3':'#3a96dd','4':'#c50f1f',
+          '5':'#881798','6':'#c19c00','7':'#cccccc','8':'#767676','9':'#3b78ff',
+          'a':'#16c60c','b':'#61d6d6','c':'#e74856','d':'#b4009e','e':'#f9f1a5','f':'#f2f2f2'
+        };
+        const code = (args[0] || '').toLowerCase();
+        if (!code) { self.writeLine('Sets the default console foreground and background colors.', 'dim'); return; }
+        if (code.length >= 1 && map[code[0]]) self.color.bg = map[code[0]];
+        if (code.length >= 2 && map[code[1]]) self.color.fg = map[code[1]];
+        const s = document.getElementById('screen');
+        if (s) { s.style.background = self.color.bg; s.style.color = self.color.fg; }
+      }
+    };
+
+    /* ----- prompt ----- */
+    C.prompt = {
+      desc: 'Changes the cmd.exe command prompt.',
+      run: (args) => {
+        if (!args.length) self.env.PROMPT = '$P$G';
+        else self.env.PROMPT = args.join(' ');
+        self.updatePrompt();
+      }
+    };
+
+    /* ----- set ----- */
+    C.set = {
+      desc: 'Displays, sets, or removes cmd.exe environment variables.',
+      run: (args, raw) => {
+        if (!args.length) {
+          Object.keys(self.env).sort().forEach(k => self.writeLine(k + '=' + self.env[k]));
+          return;
+        }
+        const full = raw.replace(/^set\s+/i, '');
+        const eq = full.indexOf('=');
+        if (eq === -1) {
+          const k = full.toUpperCase();
+          if (self.env[k] !== undefined) self.writeLine(k + '=' + self.env[k]);
+          else self.writeLine('Environment variable ' + full + ' not defined');
+        } else {
+          const k = full.substring(0, eq).toUpperCase();
+          const v = full.substring(eq + 1);
+          self.env[k] = v;
+        }
+      }
+    };
+
+    /* ----- path ----- */
+    C.path = {
+      desc: 'Displays or sets a search path for executable files.',
+      run: (args) => {
+        if (!args.length) { self.writeLine('PATH=' + (self.env.PATH || '')); return; }
+        self.env.PATH = args.join('');
+      }
+    };
+
+    /* ----- systeminfo ----- */
+    C.systeminfo = {
+      desc: 'Displays machine specific properties and configuration.',
+      run: () => {
+        const lines = [
+          '',
+          'Host Name:                 NEXUS-PC',
+          'OS Name:                   Microsoft Windows 11 Pro',
+          'OS Version:                10.0.22631 N/A Build 22631',
+          'OS Manufacturer:           Microsoft Corporation',
+          'OS Configuration:          Standalone Workstation',
+          'OS Build Type:             Multiprocessor Free',
+          'Registered Owner:          NexusOS User',
+          'Product ID:                00330-80000-00000-AA123',
+          'Original Install Date:     ' + new Date(Date.now() - 86400000*30).toLocaleString('en-US'),
+          'System Boot Time:          ' + new Date(Date.now() - 3600000*2).toLocaleString('en-US'),
+          'System Manufacturer:       Nexus Systems Inc.',
+          'System Model:              NexusBook Pro 2026',
+          'System Type:               x64-based PC',
+          'Processor(s):              1 Processor(s) Installed.',
+          '                           [01]: Intel64 Family 6 Model 154 ~2600 Mhz',
+          'BIOS Version:              Nexus BIOS 2.14, 01/15/2026',
+          'Windows Directory:         C:\\Windows',
+          'System Directory:          C:\\Windows\\System32',
+          'Boot Device:               \\Device\\HarddiskVolume1',
+          'System Locale:             en-us;English (United States)',
+          'Input Locale:              en-us;English (United States)',
+          'Time Zone:                 (UTC+07:00) Jakarta',
+          'Total Physical Memory:     16,384 MB',
+          'Available Physical Memory: 9,741 MB',
+          'Virtual Memory: Max Size:  18,432 MB',
+          'Virtual Memory: Available: 12,110 MB',
+          'Virtual Memory: In Use:    6,322 MB',
+          'Page File Location(s):     C:\\pagefile.sys',
+          'Domain:                    WORKGROUP',
+          'Logon Server:              \\\\NEXUS-PC',
+          'Hotfix(s):                 5 Hotfix(s) Installed.',
+          'Network Card(s):           2 NIC(s) Installed.',
+          '                           [01]: Intel(R) Wi-Fi 6E AX211',
+          '                                 Connection Name: Wi-Fi',
+          '                                 DHCP Enabled:    Yes',
+          '                                 IP address(es)',
+          '                                 [01]: 192.168.1.42',
+          '                           [02]: Bluetooth Device (Personal Area Network)',
+          ''
+        ];
+        lines.forEach(l => self.writeLine(l));
+      }
+    };
+
+    /* ----- hostname ----- */
+    C.hostname = { desc: 'Prints the name of the current host.', run: () => self.writeLine('NEXUS-PC') };
+
+    /* ----- whoami ----- */
+    C.whoami = {
+      desc: 'Displays information about the current user.',
+      run: (args) => {
+        if (args.includes('/user')) {
+          self.writeLine('');
+          self.writeLine('USER INFORMATION');
+          self.writeLine('----------------');
+          self.writeLine('User Name        SID');
+          self.writeLine('================ ==============================================');
+          self.writeLine('nexus-pc\\guest   S-1-5-21-3742693271-1958344965-4206484793-1001');
+          self.writeLine('');
+          return;
+        }
+        self.writeLine('nexus-pc\\guest');
+      }
+    };
+
+    /* ----- ipconfig ----- */
+    C.ipconfig = {
+      desc: 'Displays all current TCP/IP network configuration values.',
+      run: (args) => {
+        const all = args.includes('/all');
+        self.writeLine('');
+        self.writeLine('Windows IP Configuration');
+        self.writeLine('');
+        if (all) {
+          self.writeLine('   Host Name . . . . . . . . . . . . : NEXUS-PC');
+          self.writeLine('   Primary Dns Suffix  . . . . . . . :');
+          self.writeLine('   Node Type . . . . . . . . . . . . : Hybrid');
+          self.writeLine('   IP Routing Enabled. . . . . . . . : No');
+          self.writeLine('   WINS Proxy Enabled. . . . . . . . : No');
+          self.writeLine('');
+        }
+        self.writeLine('Wireless LAN adapter Wi-Fi:');
+        self.writeLine('');
+        if (all) {
+          self.writeLine('   Connection-specific DNS Suffix  . :');
+          self.writeLine('   Description . . . . . . . . . . . : Intel(R) Wi-Fi 6E AX211 160MHz');
+          self.writeLine('   Physical Address. . . . . . . . . : 4C-77-66-A1-B2-C3');
+          self.writeLine('   DHCP Enabled. . . . . . . . . . . : Yes');
+          self.writeLine('   Autoconfiguration Enabled . . . . : Yes');
+        }
+        self.writeLine('   Link-local IPv6 Address . . . . . : fe80::1234:5678:9abc:def0%12(Preferred)');
+        self.writeLine('   IPv4 Address. . . . . . . . . . . : 192.168.1.42(Preferred)');
+        self.writeLine('   Subnet Mask . . . . . . . . . . . : 255.255.255.0');
+        self.writeLine('   Default Gateway . . . . . . . . . : 192.168.1.1');
+        if (all) {
+          self.writeLine('   DHCP Server . . . . . . . . . . . : 192.168.1.1');
+          self.writeLine('   DNS Servers . . . . . . . . . . . : 1.1.1.1');
+          self.writeLine('                                       8.8.8.8');
+        }
+        self.writeLine('');
+      }
+    };
+
+    /* ----- ping ----- */
+    C.ping = {
+      desc: 'Sends ICMP echo requests to a host.',
+      run: (args, raw) => {
+        const host = args.find(a => !a.startsWith('-') && !a.startsWith('/')) || '127.0.0.1';
+        const isLocalhost = host === '127.0.0.1' || host.toLowerCase() === 'localhost';
+        const ip = isLocalhost ? '127.0.0.1' : '142.250.190.46';
+        self.writeLine('');
+        self.writeLine('Pinging ' + host + ' [' + ip + '] with 32 bytes of data:');
+        let i = 0;
+        const doPing = () => {
+          if (i >= 4) {
+            self.writeLine('');
+            self.writeLine('Ping statistics for ' + ip + ':');
+            self.writeLine('    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),');
+            self.writeLine('Approximate round trip times in milli-seconds:');
+            self.writeLine('    Minimum = 1ms, Maximum = 8ms, Average = 4ms');
+            self.writeLine('');
+            return;
+          }
+          const t = isLocalhost ? '<1ms' : (Math.floor(Math.random()*8)+2) + 'ms';
+          self.writeLine('Reply from ' + ip + ': bytes=32 time=' + t + ' TTL=' + (isLocalhost?128:117));
+          i++;
+          setTimeout(doPing, 200);
+        };
+        doPing();
+      }
+    };
+
+    /* ----- tracert ----- */
+    C.tracert = {
+      desc: 'Traces the route to a remote host.',
+      run: (args) => {
+        const host = args.find(a => !a.startsWith('-') && !a.startsWith('/')) || 'google.com';
+        self.writeLine('');
+        self.writeLine('Tracing route to ' + host + ' over a maximum of 30 hops:');
+        self.writeLine('');
+        const hops = [
+          ['1', '    <1 ms    <1 ms    <1 ms  192.168.1.1'],
+          ['2', '     3 ms     2 ms     3 ms  10.20.0.1'],
+          ['3', '     8 ms     7 ms     9 ms  103.10.5.1'],
+          ['4', '    12 ms    11 ms    12 ms  103.10.4.5'],
+          ['5', '    18 ms    17 ms    19 ms  72.14.210.1'],
+          ['6', '    22 ms    23 ms    22 ms  142.250.190.46']
+        ];
+        let i = 0;
+        const step = () => {
+          if (i >= hops.length) {
+            self.writeLine('');
+            self.writeLine('Trace complete.');
+            self.writeLine('');
+            return;
+          }
+          self.writeLine(hops[i][0] + hops[i][1]);
+          i++;
+          setTimeout(step, 250);
+        };
+        step();
+      }
+    };
+
+    /* ----- nslookup ----- */
+    C.nslookup = {
+      desc: 'Displays DNS information.',
+      run: (args) => {
+        const host = args[0] || '';
+        if (!host) {
+          self.writeLine('Default Server:  one.one.one.one');
+          self.writeLine('Address:  1.1.1.1');
+          self.writeLine('');
+          self.writeLine('>');
+          return;
+        }
+        self.writeLine('Server:  one.one.one.one');
+        self.writeLine('Address:  1.1.1.1');
+        self.writeLine('');
+        self.writeLine('Non-authoritative answer:');
+        self.writeLine('Name:    ' + host);
+        self.writeLine('Addresses:  142.250.190.46');
+        self.writeLine('            2404:6800:4003:c02::66');
+        self.writeLine('');
+      }
+    };
+
+    /* ----- netstat ----- */
+    C.netstat = {
+      desc: 'Displays protocol statistics and current TCP/IP network connections.',
+      run: () => {
+        self.writeLine('');
+        self.writeLine('Active Connections');
+        self.writeLine('');
+        self.writeLine('  Proto  Local Address          Foreign Address        State');
+        self.writeLine('  TCP    192.168.1.42:53422     142.250.190.46:443     ESTABLISHED');
+        self.writeLine('  TCP    192.168.1.42:53424     104.18.32.7:443        ESTABLISHED');
+        self.writeLine('  TCP    192.168.1.42:53450     52.97.146.162:443      ESTABLISHED');
+        self.writeLine('  TCP    192.168.1.42:53475     140.82.112.26:443      TIME_WAIT');
+        self.writeLine('  TCP    192.168.1.42:139       0.0.0.0:0              LISTENING');
+        self.writeLine('  TCP    192.168.1.42:445       0.0.0.0:0              LISTENING');
+        self.writeLine('');
+      }
+    };
+
+    /* ----- tasklist ----- */
+    C.tasklist = {
+      desc: 'Displays all currently running tasks.',
+      run: () => {
+        self.writeLine('');
+        self.writeLine('Image Name                     PID Session Name        Session#    Mem Usage');
+        self.writeLine('========================= ======== ================ =========== ============');
+        self.writeLine('System Idle Process              0 Services                   0         8 K');
+        self.writeLine('System                           4 Services                   0       148 K');
+        self.writeLine('smss.exe                       412 Services                   0       640 K');
+        self.writeLine('csrss.exe                      688 Services                   0     3,216 K');
+        self.writeLine('winlogon.exe                   796 Services                   0     6,420 K');
+        self.writeLine('services.exe                   860 Services                   0     7,108 K');
+        self.writeLine('lsass.exe                      868 Services                   0    12,984 K');
+        self.writeLine('svchost.exe                   1024 Services                   0    18,562 K');
+        self.writeLine('explorer.exe                  4820 Console                    1    84,320 K');
+        self.writeLine('cmd.exe                       6120 Console                    1     4,192 K');
+        self.writeLine('nexus.exe                     7244 Console                    1   128,540 K');
+        self.writeLine('msedge.exe                    8100 Console                    1   402,180 K');
+        self.writeLine('');
+      }
+    };
+
+    /* ----- taskkill ----- */
+    C.taskkill = {
+      desc: 'Kills one or more tasks by process id (PID) or image name.',
+      run: (args, raw) => {
+        const im = args.findIndex(a => /^\/im$/i.test(a));
+        const pid = args.findIndex(a => /^\/pid$/i.test(a));
+        if (im >= 0 && args[im + 1]) {
+          self.writeLine('SUCCESS: Sent termination signal to the process "' + args[im+1] + '" with PID 7244.');
+        } else if (pid >= 0 && args[pid + 1]) {
+          self.writeLine('SUCCESS: Sent termination signal to the process with PID ' + args[pid+1] + '.');
+        } else {
+          self.writeLine('ERROR: Invalid syntax. Use TASKKILL /IM <name> or /PID <pid>.', 'err');
+        }
+      }
+    };
+
+    /* ----- calc / notepad / explorer / start ----- */
+    C.calc = {
+      desc: 'Starts the Calculator application.',
+      run: () => { self.onOpenApp('calculator'); }
+    };
+    C.notepad = {
+      desc: 'Starts Notepad.',
+      run: () => { self.onOpenApp('notes'); }
+    };
+    C.explorer = {
+      desc: 'Opens File Explorer.',
+      run: () => { self.onOpenApp('files'); }
+    };
+    C.start = {
+      desc: 'Starts a separate window to run a specified program.',
+      run: (args) => {
+        const app = args.find(a => !a.startsWith('/'));
+        if (!app) { self.writeLine('The syntax of the command is incorrect.', 'err'); return; }
+        const clean = app.replace(/\.(exe|bat|cmd)$/i, '').toLowerCase();
+        const map = { 'calc':'calculator', 'calc2':'calculator', 'notepad':'notes', 'explorer':'files',
+                      'nexus':'about', 'music':'music', 'settings':'settings' };
+        const target = map[clean] || clean;
+        self.onOpenApp(target);
+      }
+    };
+    C.nexus = { desc: 'Opens NexusOS About window.', run: () => self.onOpenApp('about') };
+
+    /* ----- pause ----- */
+    C.pause = {
+      desc: 'Suspends processing of a batch file.',
+      run: () => {
+        self.writeLine('Press any key to continue . . .');
+        self.waitingFor = { type: 'pause' };
+      }
+    };
+
+    /* ----- timeout ----- */
+    C.timeout = {
+      desc: 'Delays processing for a specified number of seconds.',
+      run: (args) => {
+        const t = parseInt(args.find(a => /^\d+$/.test(a)) || '5', 10);
+        let left = t;
+        const tick = () => {
+          if (left <= 0) { self.writeLine(''); return; }
+          self.write(`\rWaiting for ${left} seconds, press a key to continue ...`);
+          left--;
+          setTimeout(tick, 1000);
+        };
+        tick();
+      }
+    };
+
+    /* ----- shutdown ----- */
+    C.shutdown = {
+      desc: 'Shuts down or restarts the computer.',
+      run: (args) => {
+        const r = args.some(a => /^\/r$/i.test(a));
+        self.writeLine('');
+        if (r) {
+          self.writeLine('System is restarting...', 'warn');
+          setTimeout(() => location.reload(), 2000);
+        } else {
+          self.writeLine('System is shutting down...', 'warn');
+          setTimeout(() => {
+            self.clear();
+            self.writeLine('It is now safe to turn off your computer.');
+          }, 1500);
+        }
+      }
+    };
+
+    /* ----- goto (batch only) ----- */
+    C.goto = { desc: 'Directs cmd.exe to a labeled line in a batch program.', run: (args) => {
+      if (!args.length) self.writeLine('The syntax of the command is incorrect.', 'err');
+      return 'goto_no_batch';
+    }};
+
+    /* ----- rem ----- */
+    C.rem = { desc: 'Records comments in a batch file.', run: () => {} };
+
+    /* ----- fc ----- */
+    C.fc = {
+      desc: 'Compares two files or sets of files.',
+      run: (args) => {
+        const files = args.filter(a => !a.startsWith('/'));
+        if (files.length < 2) { self.writeLine('The syntax of the command is incorrect.', 'err'); return; }
+        const a = self.getNode(normalizePath(files[0], self.cwd));
+        const b = self.getNode(normalizePath(files[1], self.cwd));
+        if (!a || !b) { self.writeLine('The system cannot find the file specified.', 'err'); return; }
+        self.writeLine('Comparing files ' + baseName(files[0]).toUpperCase() + ' and ' + baseName(files[1]).toUpperCase());
+        if ((a.content || '') === (b.content || '')) {
+          self.writeLine('FC: no differences encountered');
+        } else {
+          self.writeLine('***** Files differ *****', 'warn');
+        }
+      }
+    };
+
+    return C;
+  }
+
+  /* ---------- Dir line formatter ---------- */
+  formatDirLine(name, node) {
+    const size = node.type === 'dir' ? '' : fmtBytes(node.size || 0);
+    const date = fmtDate(new Date());
+    const dirTag = node.type === 'dir' ? '<DIR>' : '     ';
+    const nm = node.type === 'dir' ? name.toUpperCase() : name;
+    return date + '    ' + dirTag + '          ' + (size ? size.padStart(12) : '            ') + ' ' + nm;
+  }
+  printFileLine(name, node, bare) {
+    if (bare) { this.writeLine(name); return; }
+    this.writeLine(this.formatDirLine(name, node));
+  }
+
+  /* ---------- Input binding ---------- */
+  bindInput() {
+    this.inputEl.addEventListener('keydown', e => this.onKey(e));
+    document.getElementById('screen').addEventListener('click', e => {
+      if (!e.target.closest('input')) this.inputEl.focus();
+    });
+  }
+
+  onKey(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const line = this.inputEl.value;
+      this.inputEl.value = '';
+      this.handleLine(line);
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (this.history.length === 0) return;
+      if (this.histIdx === 0) this.histIdx = this.history.length;
+      this.histIdx = Math.max(0, this.histIdx - 1);
+      this.inputEl.value = this.history[this.histIdx] || '';
+      setTimeout(() => {
+        this.inputEl.selectionStart = this.inputEl.selectionEnd = this.inputEl.value.length;
+      }, 0);
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (this.history.length === 0) return;
+      this.histIdx = Math.min(this.history.length, this.histIdx + 1);
+      this.inputEl.value = this.histIdx >= this.history.length ? '' : this.history[this.histIdx];
+      return;
+    }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      this.tabComplete();
+      return;
+    }
+    if (e.key === 'c' && e.ctrlKey) {
+      e.preventDefault();
+      this.writeLine('^C');
+      this.inputEl.value = '';
+      this.waitingFor = null;
+      this.writeLine('');
+      this.updatePrompt();
+      return;
+    }
+    if (e.key === 'l' && e.ctrlKey) {
+      e.preventDefault();
+      this.clear();
+      return;
+    }
+    if (e.key === 'F7') {
+      e.preventDefault();
+      this.showHistoryPopup();
       return;
     }
   }
-  createWindow(id, app);
-  closeLauncher();
-}
 
-function createWindow(appId, app){
-  const id = State.nextId++;
-  const W = Math.min(app.w, window.innerWidth - 40);
-  const H = Math.min(app.h, window.innerHeight - 140);
-  const maxX = window.innerWidth - W - 20;
-  const maxY = window.innerHeight - H - 100;
-  const x = Math.max(20, Math.min(maxX, (window.innerWidth - W)/2 + (Math.random()-0.5)*80));
-  const y = Math.max(20, Math.min(maxY, (window.innerHeight - H)/2 - 40 + (Math.random()-0.5)*60));
-
-  const win = document.createElement('div');
-  win.className = 'win focused';
-  win.dataset.id = id;
-  win.style.cssText = `left:${x}px;top:${y}px;width:${W}px;height:${H}px;z-index:${++State.zTop}`;
-
-  win.innerHTML = `
-    <div class="titlebar">
-      <div class="win-controls">
-        <button class="wc close" title="Close"></button>
-        <button class="wc min" title="Minimize"></button>
-        <button class="wc max" title="Maximize"></button>
-      </div>
-      <div class="ttl">${app.icon} ${app.name}</div>
-    </div>
-    <div class="win-body"></div>
-    <div class="resize-handle"></div>
-  `;
-
-  $('#windowsLayer').appendChild(win);
-
-  const body = win.querySelector('.win-body');
-  app.render(body, id);
-
-  const w = {
-    id, appId, el: win,
-    x, y, w: W, h: H,
-    minimized: false, maximized: false,
-    prev: null
-  };
-  State.windows.set(id, w);
-
-  // Controls
-  win.querySelector('.wc.close').addEventListener('click', e => { e.stopPropagation(); closeWindow(id); });
-  win.querySelector('.wc.min').addEventListener('click', e => { e.stopPropagation(); toggleMinimize(id); });
-  win.querySelector('.wc.max').addEventListener('click', e => { e.stopPropagation(); toggleMaximize(id); });
-
-  // Focus on click
-  win.addEventListener('pointerdown', () => focusWindow(id));
-
-  // Drag
-  makeDraggable(win, win.querySelector('.titlebar'), id);
-  // Resize
-  makeResizable(win, win.querySelector('.resize-handle'), id);
-
-  focusWindow(id);
-  renderTaskbar();
-  return id;
-}
-
-function closeWindow(id){
-  const w = State.windows.get(id);
-  if(!w) return;
-  w.el.style.opacity = '0';
-  w.el.style.transform = 'scale(.92) translateY(10px)';
-  setTimeout(() => {
-    w.el.remove();
-    State.windows.delete(id);
-    if(State.focused === id) State.focused = null;
-    renderTaskbar();
-  }, 180);
-}
-
-function toggleMinimize(id){
-  const w = State.windows.get(id);
-  if(!w) return;
-  w.minimized = !w.minimized;
-  w.el.classList.toggle('minimized', w.minimized);
-  if(w.minimized && State.focused === id) State.focused = null;
-  else if(!w.minimized) focusWindow(id);
-  renderTaskbar();
-}
-
-function toggleMaximize(id){
-  const w = State.windows.get(id);
-  if(!w) return;
-  if(w.maximized){
-    const p = w.prev;
-    Object.assign(w.el.style, { left: p.x+'px', top: p.y+'px', width: p.w+'px', height: p.h+'px' });
-    w.maximized = false;
-    w.el.classList.remove('maximized');
-  } else {
-    w.prev = { x: w.x, y: w.y, w: w.w, h: w.h };
-    Object.assign(w.el.style, { left: '0px', top: '0px', width: '100vw', height: `calc(100vh - ${getComputedStyle(document.documentElement).getPropertyValue('--taskbar-h')} - 14px)` });
-    w.maximized = true;
-    w.el.classList.add('maximized');
-  }
-}
-
-function focusWindow(id){
-  if(State.focused === id) return;
-  State.windows.forEach(w => w.el.classList.remove('focused'));
-  const w = State.windows.get(id);
-  if(!w) return;
-  w.el.classList.add('focused');
-  w.el.style.zIndex = ++State.zTop;
-  State.focused = id;
-  renderTaskbar();
-}
-
-function makeDraggable(win, handle, id){
-  let startX, startY, startL, startT, dragging = false;
-
-  handle.addEventListener('pointerdown', e => {
-    if(e.target.closest('.wc')) return;
-    const w = State.windows.get(id);
-    if(w.maximized) return;
-    dragging = true;
-    startX = e.clientX; startY = e.clientY;
-    startL = parseInt(win.style.left) || 0;
-    startT = parseInt(win.style.top) || 0;
-    handle.setPointerCapture(e.pointerId);
-    win.style.transition = 'none';
-  });
-
-  handle.addEventListener('pointermove', e => {
-    if(!dragging) return;
-    const w = State.windows.get(id);
-    let nx = startL + (e.clientX - startX);
-    let ny = startT + (e.clientY - startY);
-    // Clamp to viewport
-    nx = Math.max(-w.w + 100, Math.min(window.innerWidth - 100, nx));
-    ny = Math.max(0, Math.min(window.innerHeight - 60, ny));
-    win.style.left = nx + 'px';
-    win.style.top = ny + 'px';
-    w.x = nx; w.y = ny;
-  });
-
-  handle.addEventListener('pointerup', e => {
-    dragging = false;
-    handle.releasePointerCapture(e.pointerId);
-    win.style.transition = '';
-  });
-}
-
-function makeResizable(win, handle, id){
-  let startX, startY, startW, startH, resizing = false;
-
-  handle.addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    const w = State.windows.get(id);
-    if(w.maximized) return;
-    resizing = true;
-    startX = e.clientX; startY = e.clientY;
-    startW = w.w; startH = w.h;
-    handle.setPointerCapture(e.pointerId);
-  });
-
-  handle.addEventListener('pointermove', e => {
-    if(!resizing) return;
-    const w = State.windows.get(id);
-    const nw = Math.max(280, startW + (e.clientX - startX));
-    const nh = Math.max(180, startH + (e.clientY - startY));
-    win.style.width = nw + 'px';
-    win.style.height = nh + 'px';
-    w.w = nw; w.h = nh;
-  });
-
-  handle.addEventListener('pointerup', e => {
-    resizing = false;
-    handle.releasePointerCapture(e.pointerId);
-  });
-}
-
-/* ===== TASKBAR ===== */
-function renderTaskbar(){
-  const container = $('#taskItems');
-  const items = [];
-  State.windows.forEach((w, id) => {
-    const app = Apps[w.appId];
-    items.push(`
-      <button class="task-item ${State.focused===id?'focused':''}" data-wid="${id}">
-        <span class="ti-icon">${app.icon}</span>
-        <span class="ti-name">${app.name}</span>
-      </button>
-    `);
-  });
-  container.innerHTML = items.join('');
-  container.querySelectorAll('.task-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = parseInt(btn.dataset.wid);
-      const w = State.windows.get(id);
-      if(!w) return;
-      if(w.minimized) toggleMinimize(id);
-      else if(State.focused === id) toggleMinimize(id);
-      else focusWindow(id);
-    });
-  });
-}
-
-/* ===== DESKTOP ICONS ===== */
-function renderDesktopIcons(){
-  const container = $('#desktopIcons');
-  const pinned = ['files','terminal','notes','music'];
-  container.innerHTML = pinned.map(id => {
-    const app = Apps[id];
-    return `
-      <div class="d-icon" data-app="${id}">
-        <div class="ic" style="background:${app.color}">${app.icon}</div>
-        <div class="lbl">${app.name}</div>
-      </div>
-    `;
-  }).join('');
-  container.querySelectorAll('.d-icon').forEach(el => {
-    el.addEventListener('dblclick', () => openApp(el.dataset.app));
-    el.addEventListener('click', (e) => {
-      // Single tap on touch: brief delay
-      if(e.pointerType === 'touch') openApp(el.dataset.app);
-    });
-  });
-}
-
-/* ===== LAUNCHER ===== */
-function openLauncher(){
-  $('#launcher').classList.add('show');
-  $('#launcherSearch').value = '';
-  renderAppGrid('');
-  setTimeout(() => $('#launcherSearch').focus(), 100);
-}
-function closeLauncher(){
-  $('#launcher').classList.remove('show');
-}
-function renderAppGrid(query){
-  const q = query.toLowerCase();
-  const filtered = Object.entries(Apps).filter(([id, app]) =>
-    app.name.toLowerCase().includes(q)
-  );
-  $('#appGrid').innerHTML = filtered.map(([id, app]) => `
-    <button class="app-tile" data-app="${id}">
-      <div class="ic" style="background:${app.color}">${app.icon}</div>
-      <div class="nm">${app.name}</div>
-    </button>
-  `).join('');
-  $('#appGrid').querySelectorAll('.app-tile').forEach(el => {
-    el.addEventListener('click', () => openApp(el.dataset.app));
-  });
-}
-
-/* ==========================================================
-   APP RENDERERS
-   ========================================================== */
-
-/* --- FILES --- */
-function renderFiles(body, id){
-  let cwd = '/';
-  function draw(){
-    const items = FS[cwd] || FS['/'];
-    body.innerHTML = `
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;font-family:ui-monospace,monospace">${cwd}</div>
-      <div class="file-list">
-        ${items.map((f, i) => `
-          <div class="file-item" data-idx="${i}">
-            <span class="fi-ic">${f.type==='folder'?'📁':'📄'}</span>
-            <span class="fi-name">${escapeHtml(f.name)}</span>
-            <span class="fi-size">${f.size || ''}</span>
-          </div>
-        `).join('')}
-      </div>
-    `;
-    body.querySelectorAll('.file-item').forEach(el => {
-      el.addEventListener('dblclick', () => {
-        const f = items[parseInt(el.dataset.idx)];
-        if(f.type === 'folder'){
-          cwd = '/' + f.name;
-          FS[cwd] = FS[cwd] || [
-            { name: `${f.name}_file_1.txt`, type:'file', size:'1.1 KB', content:`Isi dari ${f.name}_file_1.txt` },
-            { name: `${f.name}_notes.md`, type:'file', size:'890 B', content:`Catatan untuk ${f.name}` }
-          ];
-          draw();
-        } else {
-          toast(`Membuka ${f.name}`, '📄');
-          if(f.content) showFilePreview(f);
-        }
-      });
-      el.addEventListener('click', () => {
-        if(window.innerWidth < 700) {
-          const f = items[parseInt(el.dataset.idx)];
-          if(f.type === 'folder'){
-            cwd = '/' + f.name;
-            FS[cwd] = FS[cwd] || [
-              { name: `${f.name}_file_1.txt`, type:'file', size:'1.1 KB', content:`Isi dari ${f.name}_file_1.txt` },
-              { name: `${f.name}_notes.md`, type:'file', size:'890 B', content:`Catatan untuk ${f.name}` }
-            ];
-            draw();
-          } else if(f.content) showFilePreview(f);
-        }
-      });
-    });
-  }
-  function showFilePreview(f){
-    body.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div style="font-weight:600;font-size:14px">${escapeHtml(f.name)}</div>
-        <button class="btn-back" style="background:rgba(255,255,255,.08);border:none;color:inherit;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:11px">← Back</button>
-      </div>
-      <pre style="white-space:pre-wrap;font-family:ui-monospace,monospace;font-size:12.5px;line-height:1.65;color:var(--text)">${escapeHtml(f.content)}</pre>
-    `;
-    body.querySelector('.btn-back').addEventListener('click', draw);
-  }
-  draw();
-}
-
-/* --- TERMINAL --- */
-function renderTerminal(body, id){
-  body.classList.add('terminal');
-  body.innerHTML = `
-    <div class="term-output" id="term-out-${id}"></div>
-    <div class="term-row">
-      <span class="prompt">nexus@os</span>
-      <span class="path">~</span>
-      <span>$</span>
-      <input class="terminal-input" id="term-in-${id}" autocomplete="off" spellcheck="false">
-    </div>
-  `;
-  const out = body.querySelector(`#term-out-${id}`);
-  const inp = body.querySelector(`#term-in-${id}`);
-
-  const write = (html) => {
-    const div = document.createElement('div');
-    div.className = 'line';
-    div.innerHTML = html;
-    out.appendChild(div);
-    body.scrollTop = body.scrollHeight;
-  };
-
-  write(`<span class="ok">NexusOS Terminal v1.0</span> — ketik <span class="warn">help</span> untuk daftar perintah`);
-  write('');
-
-  const cmds = {
-    help: () => `Perintah tersedia:\n  help              Tampilkan bantuan\n  ls                Daftar file di direktori ini\n  cat <file>        Tampilkan isi file\n  echo <text>       Tampilkan teks\n  date              Tanggal & waktu sekarang\n  whoami            Info pengguna\n  neofetch          Info sistem\n  theme <d/l>       Ganti tema (dark/light)\n  open <app>        Buka aplikasi\n  clear             Bersihkan layar`,
-    ls: () => (FS['/'] || []).map(f => f.type==='folder' ? `<span style="color:#4ec9b0">${f.name}/</span>` : f.name).join('  '),
-    cat: (args) => {
-      if(!args[0]) return `<span class="err">cat: butuh nama file</span>`;
-      const f = (FS['/']||[]).find(x => x.name === args[0] && x.type === 'file');
-      if(!f) return `<span class="err">cat: ${args[0]}: file tidak ditemukan</span>`;
-      return escapeHtml(f.content || '');
-    },
-    echo: (args) => args.join(' '),
-    date: () => new Date().toString(),
-    whoami: () => 'nexus@os (guest)',
-    neofetch: () => `
-<span style="color:#7c6cff;font-weight:600">    ╔══════════╗ </span>  <span style="color:#7c6cff;font-weight:600">nexus@os</span>
-<span style="color:#7c6cff">    ║  NEXUS   ║ </span>  ─────────
-<span style="color:#7c6cff">    ║   OS     ║ </span>  OS: NexusOS 1.0
-<span style="color:#7c6cff">    ╚══════════╝ </span>  Kernel: Web 2026
-                       Shell: nexus-sh
-                       WM: NexusWM
-                       Theme: ${State.theme}
-                       Apps: ${Object.keys(Apps).length}`,
-    theme: (args) => {
-      if(args[0]==='l' || args[0]==='light'){ setTheme('light'); return '<span class="ok">Tema diubah ke light</span>'; }
-      if(args[0]==='d' || args[0]==='dark'){ setTheme('dark'); return '<span class="ok">Tema diubah ke dark</span>'; }
-      return `<span class="err">theme: gunakan "theme d" atau "theme l"</span>`;
-    },
-    open: (args) => {
-      const a = args[0];
-      if(Apps[a]){ openApp(a); return `<span class="ok">Membuka ${Apps[a].name}...</span>`; }
-      return `<span class="err">open: aplikasi "${a}" tidak ditemukan</span>`;
-    },
-    clear: () => { out.innerHTML = ''; return null; }
-  };
-
-  const history = [];
-  let histIdx = -1;
-
-  inp.addEventListener('keydown', e => {
-    if(e.key === 'Enter'){
-      const val = inp.value.trim();
-      inp.value = '';
-      if(!val) { write(`<span class="prompt">nexus@os</span> <span class="path">~</span> $`); return; }
-      history.push(val); histIdx = history.length;
-      write(`<span class="prompt">nexus@os</span> <span class="path">~</span> $ ${escapeHtml(val)}`);
-      const [cmd, ...args] = val.split(/\s+/);
-      const fn = cmds[cmd.toLowerCase()];
-      if(fn){
-        const res = fn(args);
-        if(res) res.split('\n').forEach(l => write(l));
+  /* ---------- Tab completion ---------- */
+  tabComplete() {
+    const val = this.inputEl.value;
+    const parts = val.split(/\s+/);
+    const lastToken = parts[parts.length - 1];
+    let candidates = [];
+    if (parts.length === 1 && !val.includes(' ')) {
+      // Command name
+      const prefix = val.toLowerCase();
+      candidates = Object.keys(this.commands).filter(k => k.startsWith(prefix)).sort();
+    } else {
+      // File name in current dir
+      const node = this.getNode(this.cwd);
+      if (node && node.children) {
+        const prefix = lastToken.replace(/[\\/].*$/, '');
+        const search = lastToken.replace(/^.*[\\/]/, '').toLowerCase();
+        candidates = Object.keys(node.children).filter(k => k.toLowerCase().startsWith(search));
+      }
+    }
+    if (!candidates.length) return;
+    if (candidates.length === 1) {
+      const replacement = candidates[0];
+      if (parts.length === 1 && !val.includes(' ')) {
+        this.inputEl.value = replacement;
       } else {
-        write(`<span class="err">nexus-sh: command not found: ${escapeHtml(cmd)}</span>`);
+        parts[parts.length - 1] = replacement;
+        this.inputEl.value = parts.join(' ');
       }
-      write('');
-    } else if(e.key === 'ArrowUp'){
-      if(histIdx > 0){ histIdx--; inp.value = history[histIdx]; e.preventDefault(); }
-    } else if(e.key === 'ArrowDown'){
-      if(histIdx < history.length - 1){ histIdx++; inp.value = history[histIdx]; }
-      else { histIdx = history.length; inp.value = ''; }
-      e.preventDefault();
+    } else {
+      // Print common prefix and list
+      let cp = candidates[0];
+      candidates.slice(1).forEach(c => {
+        let i = 0;
+        while (i < cp.length && i < c.length && cp[i].toLowerCase() === c[i].toLowerCase()) i++;
+        cp = cp.substring(0, i);
+      });
+      if (cp.length > lastToken.replace(/^.*[\\/]/, '').length) {
+        if (parts.length === 1) this.inputEl.value = cp;
+        else { parts[parts.length - 1] = cp; this.inputEl.value = parts.join(' '); }
+      } else {
+        this.writeLine('');
+        candidates.forEach(c => this.writeLine(c));
+        this.updatePrompt();
+        this.inputEl.value = val;
+      }
     }
-  });
-
-  setTimeout(() => inp.focus(), 100);
-  body.addEventListener('click', (e) => {
-    if(!e.target.closest('input, button, a')) inp.focus();
-  });
-}
-
-/* --- NOTES --- */
-function renderNotes(body, id){
-  const saved = localStorage.getItem('nexus-notes') || '';
-  body.innerHTML = `
-    <div class="note-meta">
-      <span id="noteSaved">Tersimpan otomatis</span>
-    </div>
-    <textarea class="note-area" id="noteArea" placeholder="Mulai menulis...">${escapeHtml(saved)}</textarea>
-  `;
-  const ta = body.querySelector('#noteArea');
-  const meta = body.querySelector('#noteSaved');
-  let timer;
-  ta.addEventListener('input', () => {
-    clearTimeout(timer);
-    meta.textContent = 'Mengetik...';
-    timer = setTimeout(() => {
-      localStorage.setItem('nexus-notes', ta.value);
-      meta.textContent = `Tersimpan ${new Date().toLocaleTimeString('id-ID')}`;
-    }, 400);
-  });
-  setTimeout(() => ta.focus(), 100);
-}
-
-/* --- CALCULATOR --- */
-function renderCalculator(body, id){
-  body.innerHTML = `
-    <div class="calc-display">
-      <div class="expr" id="calcExpr"></div>
-      <div class="val" id="calcVal">0</div>
-    </div>
-    <div class="calc-grid">
-      <button class="calc-btn op" data-v="C">C</button>
-      <button class="calc-btn op" data-v="±">±</button>
-      <button class="calc-btn op" data-v="%">%</button>
-      <button class="calc-btn op" data-v="÷">÷</button>
-      <button class="calc-btn" data-v="7">7</button>
-      <button class="calc-btn" data-v="8">8</button>
-      <button class="calc-btn" data-v="9">9</button>
-      <button class="calc-btn op" data-v="×">×</button>
-      <button class="calc-btn" data-v="4">4</button>
-      <button class="calc-btn" data-v="5">5</button>
-      <button class="calc-btn" data-v="6">6</button>
-      <button class="calc-btn op" data-v="-">−</button>
-      <button class="calc-btn" data-v="1">1</button>
-      <button class="calc-btn" data-v="2">2</button>
-      <button class="calc-btn" data-v="3">3</button>
-      <button class="calc-btn op" data-v="+">+</button>
-      <button class="calc-btn" data-v="0" style="grid-column:span 2">0</button>
-      <button class="calc-btn" data-v=".">.</button>
-      <button class="calc-btn eq" data-v="=">=</button>
-    </div>
-  `;
-  let current = '0', prev = null, op = null, fresh = false;
-  const val = body.querySelector('#calcVal');
-  const expr = body.querySelector('#calcExpr');
-
-  function update(){
-    val.textContent = current;
-    expr.textContent = prev !== null && op ? `${prev} ${op}` : '';
   }
 
-  function calc(){
-    const a = parseFloat(prev), b = parseFloat(current);
-    switch(op){
-      case '+': return a + b;
-      case '-': return a - b;
-      case '×': return a * b;
-      case '÷': return b === 0 ? 'Error' : a / b;
-      case '%': return a % b;
+  showHistoryPopup() {
+    this.writeLine('');
+    this.history.forEach((h, i) => this.writeLine('  ' + (i + 1) + '  ' + h));
+    this.writeLine('');
+  }
+
+  /* ---------- Line handler ---------- */
+  handleLine(line) {
+    // Handle waiting states
+    if (this.waitingFor) {
+      const w = this.waitingFor;
+      this.waitingFor = null;
+      this.writeLine(line);
+      if (w.type === 'pause') {
+        this.writeLine('');
+        this.updatePrompt();
+        return;
+      }
+      if (w.type === 'date' || w.type === 'time') {
+        if (!line.trim()) {
+          this.updatePrompt();
+          return;
+        }
+        this.writeLine('The system cannot accept the ' + w.type + ' entered.');
+        this.updatePrompt();
+        return;
+      }
     }
-    return b;
+
+    // Echo the input (as Windows does)
+    this.write(this.getPromptString() + line + '\n');
+
+    const trimmed = line.trim();
+    if (!trimmed) { this.updatePrompt(); return; }
+
+    // Store history
+    this.history.push(trimmed);
+    this.histIdx = this.history.length;
+
+    this.execute(trimmed);
+    this.updatePrompt();
   }
 
-  body.querySelectorAll('.calc-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const v = btn.dataset.v;
-      if(v === 'C'){ current='0'; prev=null; op=null; fresh=false; }
-      else if(v === '±'){ current = current.startsWith('-') ? current.slice(1) : '-' + current; }
-      else if(v === '%' || v === '÷' || v === '×' || v === '-' || v === '+'){
-        if(op && !fresh){ current = String(calc()); }
-        prev = current; op = v; fresh = true;
-      }
-      else if(v === '='){
-        if(op){ current = String(calc()); prev = null; op = null; }
-      }
-      else if(v === '.'){
-        if(fresh){ current = '0.'; fresh = false; }
-        else if(!current.includes('.')) current += '.';
-      }
-      else {
-        if(fresh || current === '0'){ current = v; fresh = false; }
-        else current += v;
-      }
-      update();
-    });
-  });
-  update();
-}
-
-/* --- MUSIC --- */
-function renderMusic(body, id){
-  body.innerHTML = `
-    <div class="music-player">
-      <div class="music-cover">🎵</div>
-      <div class="music-title">Midnight Drive</div>
-      <div class="music-artist">Nexus Collective</div>
-      <div class="music-progress"><div class="music-bar"></div></div>
-      <div class="music-time"><span class="cur">0:00</span><span class="dur">3:42</span></div>
-      <div class="music-ctrl">
-        <button class="music-btn" data-c="prev">⏮</button>
-        <button class="music-btn play" data-c="play">▶</button>
-        <button class="music-btn" data-c="next">⏭</button>
-      </div>
-    </div>
-  `;
-  let playing = false, time = 0;
-  const dur = 222;
-  const bar = body.querySelector('.music-bar');
-  const cur = body.querySelector('.cur');
-  const btn = body.querySelector('[data-c="play"]');
-  const player = body.querySelector('.music-player');
-
-  function fmt(s){ return Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0'); }
-
-  setInterval(() => {
-    if(playing){
-      time = (time + 0.25) % dur;
-      bar.style.width = (time/dur*100) + '%';
-      cur.textContent = fmt(time);
+  execute(cmdline) {
+    // Expand environment variables first
+    const expanded = this.expandVars(cmdline);
+    // Handle && and || (basic)
+    const chain = this.splitChain(expanded);
+    if (chain.length > 1) {
+      this.runChain(chain, 0);
+      return;
     }
-  }, 250);
+    this.runSingle(expanded);
+  }
 
-  btn.addEventListener('click', () => {
-    playing = !playing;
-    btn.textContent = playing ? '⏸' : '▶';
-    player.classList.toggle('playing', playing);
-  });
-  body.querySelector('[data-c="prev"]').addEventListener('click', () => { time = 0; bar.style.width='0%'; cur.textContent='0:00'; });
-  body.querySelector('[data-c="next"]').addEventListener('click', () => { time = 0; bar.style.width='0%'; cur.textContent='0:00'; });
-}
+  splitChain(line) {
+    // Split on && and || but not inside quotes
+    const parts = [];
+    let buf = '';
+    let inQ = false;
+    let i = 0;
+    while (i < line.length) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; buf += c; i++; continue; }
+      if (!inQ && c === '&' && line[i+1] === '&') {
+        parts.push({ cmd: buf.trim(), op: 'AND' });
+        buf = '';
+        i += 2;
+        continue;
+      }
+      if (!inQ && c === '|' && line[i+1] === '|') {
+        parts.push({ cmd: buf.trim(), op: 'OR' });
+        buf = '';
+        i += 2;
+        continue;
+      }
+      buf += c;
+      i++;
+    }
+    if (buf.trim()) parts.push({ cmd: buf.trim(), op: null });
+    return parts;
+  }
 
-/* --- SETTINGS --- */
-function renderSettings(body, id){
-  body.innerHTML = `
-    <div class="settings-section">
-      <h4>Tampilan</h4>
-      <div class="settings-row">
-        <span>Dark Mode</span>
-        <button class="toggle ${State.theme==='dark'?'on':''}" data-t="theme"></button>
-      </div>
-      <div class="settings-row">
-        <span>Warna Aksen</span>
-      </div>
-      <div class="color-dots" style="padding:0 14px 12px">
-        ${ACCENTS.map(c => `<div class="color-dot ${c===State.accent?'active':''}" style="background:${c}" data-color="${c}"></div>`).join('')}
-      </div>
-    </div>
-    <div class="settings-section">
-      <h4>Wallpaper</h4>
-      <div class="wallpaper-strip" style="padding:0 14px">
-        ${WALLPAPERS.map((w, i) => `<div class="wp-thumb ${i===State.wallpaper?'active':''}" style="background-image:url('${w}')" data-wp="${i}"></div>`).join('')}
-      </div>
-    </div>
-    <div class="settings-section">
-      <h4>Sistem</h4>
-      <div class="settings-row"><span>Versi</span><span style="color:var(--muted)">1.0.0</span></div>
-      <div class="settings-row"><span>Engine</span><span style="color:var(--muted)">Vanilla JS</span></div>
-      <div class="settings-row">
-        <span>Reset Data</span>
-        <button id="resetBtn" style="background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit">Reset</button>
-      </div>
-    </div>
-  `;
-  body.querySelector('[data-t="theme"]').addEventListener('click', (e) => {
-    setTheme(State.theme === 'dark' ? 'light' : 'dark');
-    e.target.classList.toggle('on', State.theme==='dark');
-  });
-  body.querySelectorAll('.color-dot').forEach(d => d.addEventListener('click', () => {
-    State.accent = d.dataset.color;
-    applyAccent();
-    body.querySelectorAll('.color-dot').forEach(x => x.classList.toggle('active', x.dataset.color === State.accent));
-    syncQuickSettings();
-  }));
-  body.querySelectorAll('.wp-thumb').forEach(t => t.addEventListener('click', () => {
-    State.wallpaper = parseInt(t.dataset.wp);
-    applyWallpaper();
-    body.querySelectorAll('.wp-thumb').forEach(x => x.classList.toggle('active', parseInt(x.dataset.wp) === State.wallpaper));
-    syncQuickSettings();
-  }));
-  body.querySelector('#resetBtn').addEventListener('click', () => {
-    localStorage.removeItem('nexus-notes');
-    toast('Data direset', '🗑');
-  });
-}
-
-/* --- ABOUT --- */
-function renderAbout(body, id){
-  body.innerHTML = `
-    <div style="text-align:center;padding:20px 0">
-      <div style="font-size:56px;margin-bottom:12px">✨</div>
-      <div style="font-size:22px;font-weight:700;letter-spacing:-.02em;background:linear-gradient(135deg,var(--accent),#a89bff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px">NexusOS</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:24px">Web Desktop Environment v1.0</div>
-      <div style="font-size:13px;line-height:1.7;color:var(--muted);max-width:340px;margin:0 auto 24px">
-        Desktop environment yang berjalan sepenuhnya di browser. Tanpa instalasi, tanpa dependency. Dirancang untuk pengalaman desktop di perangkat apa pun — iPad, tablet, atau laptop.
-      </div>
-      <div style="display:inline-flex;gap:16px;padding:12px 20px;border-radius:12px;background:rgba(255,255,255,.05);font-size:11px;color:var(--muted)">
-        <span>⌘K Palette</span>
-        <span>·</span>
-        <span>Drag · Resize · Snap</span>
-        <span>·</span>
-        <span>Multi-touch</span>
-      </div>
-    </div>
-  `;
-}
-
-/* ==========================================================
-   COMMAND PALETTE
-   ========================================================== */
-const Commands = [
-  ...Object.entries(Apps).map(([id, app]) => ({
-    id: 'app-' + id,
-    title: 'Open ' + app.name,
-    icon: app.icon,
-    action: () => openApp(id)
-  })),
-  { id:'toggle-theme', title:'Toggle Dark/Light Mode', icon:'🌓', kbd:'⌘T', action: () => setTheme(State.theme==='dark'?'light':'dark') },
-  { id:'next-wallpaper', title:'Next Wallpaper', icon:'🖼', action: () => { State.wallpaper = (State.wallpaper+1)%WALLPAPERS.length; applyWallpaper(); } },
-  { id:'close-all', title:'Close All Windows', icon:'✕', action: () => { [...State.windows.keys()].forEach(closeWindow); } },
-  { id:'reset-notes', title:'Reset Notes', icon:'🗑', action: () => { localStorage.removeItem('nexus-notes'); toast('Notes direset','🗑'); } }
-];
-
-function openCmdPalette(){
-  $('#cmdPalette').classList.add('show');
-  $('#cmdInput').value = '';
-  renderCmdResults('');
-  setTimeout(() => $('#cmdInput').focus(), 100);
-}
-function closeCmdPalette(){ $('#cmdPalette').classList.remove('show'); }
-
-function renderCmdResults(query){
-  const q = query.toLowerCase();
-  const filtered = Commands.filter(c => c.title.toLowerCase().includes(q));
-  const container = $('#cmdResults');
-  if(!filtered.length){ container.innerHTML = ''; return; }
-  container.innerHTML = filtered.map((c, i) => `
-    <div class="cmd-item ${i===0?'sel':''}" data-idx="${i}">
-      <span class="ci-ic">${c.icon}</span>
-      <span>${c.title}</span>
-      ${c.kbd ? `<span class="ci-kbd">${c.kbd}</span>` : ''}
-    </div>
-  `).join('');
-  container.querySelectorAll('.cmd-item').forEach((el, i) => {
-    el.addEventListener('click', () => { filtered[i].action(); closeCmdPalette(); });
-    el.addEventListener('mouseenter', () => {
-      container.querySelectorAll('.cmd-item').forEach(x => x.classList.remove('sel'));
-      el.classList.add('sel');
+  runChain(chain, idx) {
+    if (idx >= chain.length) return;
+    const part = chain[idx];
+    this.runSingle(part.cmd, (success) => {
+      const op = part.op;
+      if (!op) return;
+      if (op === 'AND' && success) this.runChain(chain, idx + 1);
+      else if (op === 'OR' && !success) this.runChain(chain, idx + 1);
+      else if (op === 'AND' && !success) return;
+      else if (op === 'OR' && success) return;
     });
-  });
-  container._filtered = filtered;
+  }
+
+  runSingle(line, cb) {
+    const tokens = this.tokenize(line);
+    if (!tokens.length) { cb && cb(true); return; }
+    const cmd = tokens[0].toLowerCase();
+    const args = tokens.slice(1);
+    const raw = line;
+
+    const handler = this.commands[cmd];
+    if (handler) {
+      try {
+        handler.run(args, raw);
+        cb && cb(true);
+      } catch (err) {
+        this.writeLine('Error: ' + err.message, 'err');
+        cb && cb(false);
+      }
+    } else {
+      // Not a builtin — check if it's an .exe / .bat
+      const clean = cmd.replace(/\.(exe|com|bat|cmd)$/, '');
+      if (this.commands[clean]) {
+        this.commands[clean].run(args, raw);
+        cb && cb(true);
+      } else {
+        this.writeLine("'" + cmd + "' is not recognized as an internal or external command,", 'err');
+        this.writeLine('operable program or batch file.', 'err');
+        cb && cb(false);
+      }
+    }
+  }
+
+  tokenize(line) {
+    const out = [];
+    let buf = '';
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; continue; }
+      if (!inQ && /\s/.test(c)) {
+        if (buf) { out.push(buf); buf = ''; }
+        continue;
+      }
+      buf += c;
+    }
+    if (buf) out.push(buf);
+    return out;
+  }
+
+  exit() {
+    this.running = false;
+    this.onExit();
+  }
 }
 
-/* ==========================================================
-   SETTINGS SYNC
-   ========================================================== */
-function setTheme(t){
-  State.theme = t;
-  applyTheme();
-  applyWallpaper();
-  syncQuickSettings();
-}
-
-function syncQuickSettings(){
-  $('#qsTheme').classList.toggle('on', State.theme === 'dark');
-  // Update wallpapers thumbs
-  $('#wallpaperStrip').innerHTML = WALLPAPERS.map((w, i) => `
-    <div class="wp-thumb ${i===State.wallpaper?'active':''}" style="background-image:url('${w}')" data-wp="${i}"></div>
-  `).join('');
-  $('#wallpaperStrip').querySelectorAll('.wp-thumb').forEach(t => {
-    t.addEventListener('click', () => {
-      State.wallpaper = parseInt(t.dataset.wp);
-      applyWallpaper();
-      syncQuickSettings();
-    });
-  });
-  // Accent dots
-  $('#accentDots').innerHTML = ACCENTS.map(c => `
-    <div class="color-dot ${c===State.accent?'active':''}" style="background:${c}" data-color="${c}"></div>
-  `).join('');
-  $('#accentDots').querySelectorAll('.color-dot').forEach(d => {
-    d.addEventListener('click', () => {
-      State.accent = d.dataset.color;
-      applyAccent();
-      syncQuickSettings();
-    });
-  });
-}
-
-/* ==========================================================
-   CLOCK
-   ========================================================== */
-function tickClock(){
-  const now = new Date();
-  const days = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
-  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-  $('#clockTime').textContent = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-  $('#clockDate').textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`;
-}
-
-/* ==========================================================
-   EVENT BINDINGS
-   ========================================================== */
-// Launcher
-$('#launcherBtn').addEventListener('click', () => {
-  if($('#launcher').classList.contains('show')) closeLauncher();
-  else openLauncher();
-});
-$('#launcherSearch').addEventListener('input', e => renderAppGrid(e.target.value));
-$('#launcher').addEventListener('click', e => { if(e.target.id === 'launcher') closeLauncher(); });
-
-// Quick Settings
-$('#qsBtn').addEventListener('click', e => {
-  e.stopPropagation();
-  $('#quickSettings').classList.toggle('show');
-});
-document.addEventListener('click', e => {
-  if(!e.target.closest('#quickSettings') && !e.target.closest('#qsBtn')) $('#quickSettings').classList.remove('show');
-});
-$('#qsTheme').addEventListener('click', () => setTheme(State.theme==='dark'?'light':'dark'));
-$('#qsWifi').addEventListener('click', e => e.currentTarget.classList.toggle('on'));
-$('#qsDnd').addEventListener('click', e => e.currentTarget.classList.toggle('on'));
-$('#qsFocus').addEventListener('click', e => e.currentTarget.classList.toggle('on'));
-$('#qsBright').addEventListener('input', e => { State.brightness = +e.target.value; applyBrightness(); });
-
-// Clock button — open launcher as calendar-ish
-$('#clockBtn').addEventListener('click', () => toast(new Date().toLocaleString('id-ID'), '📅'));
-
-// Command palette
-document.addEventListener('keydown', e => {
-  if((e.metaKey || e.ctrlKey) && e.key === 'k'){
-    e.preventDefault();
-    if($('#cmdPalette').classList.contains('show')) closeCmdPalette();
-    else openCmdPalette();
-  }
-  if(e.key === 'Escape'){
-    closeCmdPalette();
-    closeLauncher();
-    $('#quickSettings').classList.remove('show');
-  }
-});
-$('#cmdPalette').addEventListener('click', e => { if(e.target.id === 'cmdPalette') closeCmdPalette(); });
-$('#cmdInput').addEventListener('input', e => renderCmdResults(e.target.value));
-$('#cmdInput').addEventListener('keydown', e => {
-  if(e.key === 'Enter'){
-    const filtered = $('#cmdResults')._filtered || [];
-    const sel = $('#cmdResults').querySelector('.cmd-item.sel');
-    const idx = sel ? parseInt(sel.dataset.idx) : 0;
-    if(filtered[idx]){ filtered[idx].action(); closeCmdPalette(); }
-  }
-  if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
-    e.preventDefault();
-    const items = [...$('#cmdResults').querySelectorAll('.cmd-item')];
-    if(!items.length) return;
-    const cur = items.findIndex(i => i.classList.contains('sel'));
-    const next = e.key === 'ArrowDown' ? (cur+1)%items.length : (cur-1+items.length)%items.length;
-    items.forEach(i => i.classList.remove('sel'));
-    items[next].classList.add('sel');
-    items[next].scrollIntoView({ block:'nearest' });
-  }
+/* ============================================================
+   Bootstrap standalone
+   ============================================================ */
+window.__cmd = new WindowsCMD({
+  output: document.getElementById('output'),
+  input: document.getElementById('cmdInput'),
+  promptTxt: document.getElementById('promptTxt'),
+  titleEl: document.getElementById('winTitle')
 });
 
-// Right-click on desktop to open launcher
-document.addEventListener('contextmenu', e => {
-  if(e.target.closest('.win')) return;
-  e.preventDefault();
-  openLauncher();
-});
-
-// Resize listener to keep windows in view
-window.addEventListener('resize', () => {
-  State.windows.forEach(w => {
-    if(w.maximized) return;
-    const maxX = window.innerWidth - 100;
-    const maxY = window.innerHeight - 60;
-    if(parseInt(w.el.style.left) > maxX) w.el.style.left = maxX + 'px';
-    if(parseInt(w.el.style.top) > maxY) w.el.style.top = maxY + 'px';
-  });
-});
-
-/* ==========================================================
-   BOOT
-   ========================================================== */
-(function init(){
-  applyTheme();
-  applyAccent();
-  applyWallpaper();
-  renderDesktopIcons();
-  renderTaskbar();
-  syncQuickSettings();
-  tickClock();
-  setInterval(tickClock, 1000);
-
-  setTimeout(() => {
-    $('#boot').classList.add('hide');
-    setTimeout(() => {
-      toast('Selamat datang di NexusOS', '✨');
-      // Auto-open a welcome window
-      setTimeout(() => openApp('about'), 400);
-    }, 300);
-  }, 1700);
-})();
+// Focus on load
+document.getElementById('screen').focus();
+document.getElementById('cmdInput').focus();
 </script>
 </body>
 </html>
