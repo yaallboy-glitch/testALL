@@ -1,4 +1,51 @@
+/* Arketipe 1 — Editorial majalah. Ide khas: halaman dibaca seperti lembar penawaran yang dibangun dari angka, daftar, dan bukti kerja. Urutan: hero → layanan → karya → proses → harga → alasan → FAQ → kontak. */
 /* Rakyat Kecil — landing page. Satu berkas gaya, tanpa build step. */
+
+/* ---------- 1. Token ---------- */
+
+/* ---------- 1b. Revisi editorial rakyat-kecil ---------- */
+:root{
+  --bg:#f2eee7;
+  --bg-deep:#e7e0d5;
+  --surface:#fbf9f5;
+  --surface-2:#e9e1d5;
+  --line-strong:#b8aa98;
+  --line-soft:rgba(48,39,31,.14);
+  --ink:#2d2721;
+  --ink-dim:#5d5146;
+  --muted:#776a5d;
+  --acc:#b84a2f;
+  --acc-ink:#fff9f0;
+  --shadow:0 24px 60px -42px rgba(55,43,31,.45),0 1px 0 rgba(255,255,255,.8) inset;
+  --glow:0 12px 38px -28px rgba(184,74,47,.55);
+}
+body{background:var(--bg);color:var(--ink)}
+body::after{opacity:.018}
+.top{background:rgba(242,238,231,.86);box-shadow:0 12px 30px -28px rgba(45,39,33,.5)}
+.top.is-stuck .top__in{background:rgba(251,249,245,.94);border-color:var(--line-soft)}
+.brand__mark{background:var(--ink);color:var(--bg)}
+.nav a,.lang,.burger{color:var(--ink-dim)}
+.nav a:hover,.nav a.is-active,.lang:hover{color:var(--acc)}
+.hero{background:var(--bg);padding-block:clamp(4.5rem,12vw,9rem) clamp(4rem,9vw,7rem)}
+.hero::before{background:radial-gradient(circle at 78% 22%,rgba(184,74,47,.13),transparent 26%),linear-gradient(115deg,transparent 0 68%,rgba(255,255,255,.5) 68% 68.2%,transparent 68.2%)}
+.hero__lead,.row__body p,.work__body p:not(.work__tag),.sec__lead,.process__body p,.price__list,.reason p,.faq details p{color:var(--ink-dim)}
+.hero__word--accent,.eyebrow,.work__tag,.hero__kicker,.row:hover .row__no{color:var(--acc)}
+.btn{--btn-bg:var(--ink);--btn-fg:var(--bg);--btn-bd:var(--ink);box-shadow:var(--shadow)}
+.btn--ghost{--btn-bg:transparent;--btn-fg:var(--ink);--btn-bd:var(--line-strong)}
+.btn:hover{box-shadow:var(--glow)}
+.hero__facts>div,.row,.work,.price,.reason,.faq details{background:var(--surface);border-color:var(--line-soft);box-shadow:var(--shadow)}
+.hero__facts>div:hover,.row:hover,.work:hover,.price:hover,.reason:hover{background:#fffdfa;border-color:var(--line-strong)}
+.sec--layanan,.sec--harga{background:var(--bg-deep)}
+.work__fig{background:repeating-linear-gradient(135deg,transparent 0 14px,rgba(45,39,33,.08) 14px 15px),linear-gradient(165deg,#ded4c7,#c9bbae)}
+.work--cta,.work--show{background:var(--surface-2)}
+.price--featured{background:var(--ink);color:var(--bg)}
+.price--featured .price__desc,.price--featured .price__list{color:#d8cabc}
+.faq details[open]{background:var(--surface-2)}
+.sec--cta{background:var(--ink);color:var(--bg)}
+.sec--cta .cta__lead{color:#d8cabc}
+.foot{background:#211b17;color:#eadfd3}
+.foot a{color:#eadfd3}
+@media (max-width:700px){.hero__title{max-width:12ch}.hero__facts{grid-template-columns:1fr 1fr}.hero__facts>div:last-child{grid-column:1/-1}}
 
 /* ---------- 1. Token ---------- */
 :root{
@@ -497,16 +544,9 @@ h1,h2,h3,p,li,dt,dd,summary,figcaption,button,a{overflow-wrap:anywhere}
   color:var(--muted);font-size:.8rem;
 }
 
-/* ---------- 16. Animasi reveal (native scroll-timeline, tanpa JS) ---------- */
-@supports (animation-timeline:view()){
-  @media (prefers-reduced-motion:no-preference){
-    .reveal{
-      animation:reveal-in both;
-      animation-timeline:view();
-      animation-range:entry 4% cover 26%;
-    }
-  }
-}
+/* ---------- 16. Animasi reveal ---------- */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity 620ms var(--ease-out) var(--reveal-delay,0ms),transform 620ms var(--ease-out) var(--reveal-delay,0ms)}
+.reveal.is-visible{opacity:1;transform:none}
 @keyframes reveal-in{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
 
 /* ---------- 17. Responsif ---------- */

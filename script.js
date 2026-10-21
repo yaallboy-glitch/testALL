@@ -1,5 +1,5 @@
 /* Rakyat Kecil — teks dua bahasa, menu mobile, tahun footer.
-   Tanpa dependency. Animasi reveal memakai CSS scroll-timeline, bukan JS. */
+   Tanpa dependency. Animasi reveal memakai IntersectionObserver. */
 (function () {
   'use strict';
 
@@ -219,6 +219,24 @@ var SRC = {};
     };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
+  /* Reveal kecil untuk daftar editorial: observer berhenti setelah elemen masuk. */
+  var revealItems = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var revealObserver = new IntersectionObserver(function (entries, observer) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    revealItems.forEach(function (item, index) {
+      item.style.setProperty('--reveal-delay', Math.min(index % 4, 3) * 70 + 'ms');
+      revealObserver.observe(item);
+    });
+  } else {
+    revealItems.forEach(function (item) { item.classList.add('is-visible'); });
   }
 
   /* Gambar karya belum tersedia: sembunyikan, jangan tampilkan ikon rusak */
